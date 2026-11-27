@@ -25,7 +25,7 @@
 </head>
 <body class="bg-slate-100 text-slate-800 min-h-screen flex flex-col justify-between">
 
-    <!-- १. ॲडमिन सुरक्षितता तपासणी (पेज उघडण्यापूर्वी) -->
+    <!-- १. ॲडमिन सुरक्षितता तपासणी -->
     <script>
         const savedUser = localStorage.getItem('pyq_user');
         if (!savedUser) {
@@ -54,7 +54,7 @@
                         <span>पोलीस भरती प्रशासकीय कक्ष</span>
                         <span class="text-[10px] bg-amber-500 text-slate-950 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">ॲडमिन पॅनेल</span>
                     </h1>
-                    <p class="text-xs text-slate-400">विद्यार्थी मंजुरी व परीक्षा नियंत्रण केंद्र</p>
+                    <p class="text-xs text-slate-400">विद्यार्थी मंजुरी व पेपर नियंत्रण केंद्र</p>
                 </div>
             </div>
 
@@ -91,7 +91,7 @@
                 <div class="text-[11px] text-slate-500 mt-1 font-medium">नोंदणी झालेले सर्व उमेदवार</div>
             </div>
 
-            <!-- २. मंजुरी प्रलंबित (सर्वात महत्त्वाचे) -->
+            <!-- २. मंजुरी प्रलंबित -->
             <div class="bg-white p-5 rounded-2xl shadow-sm border-2 border-amber-300 bg-amber-50/30">
                 <div class="flex items-center justify-between text-amber-600 mb-2">
                     <span class="text-xs font-bold uppercase tracking-wider text-amber-800">मंजुरी प्रलंबित</span>
@@ -101,7 +101,7 @@
                 <div class="text-[11px] text-amber-700 mt-1 font-bold">मंजुरीची वाट पाहणारे</div>
             </div>
 
-            <!-- ३. मंजूर विद्यार्थी -->
+            <!-- ३. सक्रिय विद्यार्थी -->
             <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
                 <div class="flex items-center justify-between text-slate-400 mb-2">
                     <span class="text-xs font-bold uppercase tracking-wider text-slate-500">सक्रिय विद्यार्थी</span>
@@ -117,7 +117,7 @@
                     <span class="text-xs font-bold uppercase tracking-wider text-slate-500">एकूण पेपर्स</span>
                     <i class="fa-solid fa-file-lines text-purple-600 text-lg"></i>
                 </div>
-                <div id="statTotalPapers" class="text-2xl sm:text-3xl font-extrabold text-slate-900">२</div>
+                <div id="statTotalPapers" class="text-2xl sm:text-3xl font-extrabold text-slate-900">--</div>
                 <div class="text-[11px] text-slate-500 mt-1 font-medium">पोर्टलवरील सराव संच</div>
             </div>
 
@@ -132,15 +132,36 @@
             </div>
         </div>
 
-        <!-- ४. विद्यार्थी व मंजुरी विभाग (Student Approval & Management Section) -->
-        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-            
+        <!-- मुख्य नेव्हिगेशन टॅब्स (Section Tabs) -->
+        <div class="flex items-center space-x-2 border-b border-slate-200 mb-6 font-bold text-sm">
+            <button 
+                onclick="switchMainTab('studentsTab')" 
+                id="btnMainTab_students" 
+                class="main-tab-btn px-5 py-3 border-b-2 border-amber-500 text-amber-600 flex items-center space-x-2"
+            >
+                <i class="fa-solid fa-id-card"></i>
+                <span>विद्यार्थी व मंजुरी कक्ष</span>
+            </button>
+            <button 
+                onclick="switchMainTab('papersTab')" 
+                id="btnMainTab_papers" 
+                class="main-tab-btn px-5 py-3 border-b-2 border-transparent text-slate-500 hover:text-slate-800 flex items-center space-x-2 transition"
+            >
+                <i class="fa-solid fa-file-circle-plus"></i>
+                <span>सराव पेपर्स व CSV प्रश्न अपलोड</span>
+            </button>
+        </div>
+
+        <!-- ==================================================================== -->
+        <!-- टॅब १: विद्यार्थी नोंदणी व मंजुरी कक्ष (Students Tab) -->
+        <!-- ==================================================================== -->
+        <div id="section_studentsTab" class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden mb-10">
             <!-- सेक्शन हेडर व फिल्टर्स -->
             <div class="p-5 sm:p-6 border-b border-slate-200 bg-slate-50 flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
                     <h3 class="text-lg font-extrabold text-slate-900 flex items-center">
-                        <i class="fa-solid fa-id-card text-amber-500 mr-2"></i>
-                        विद्यार्थी नोंदणी व मंजुरी कक्ष
+                        <i class="fa-solid fa-users text-amber-500 mr-2"></i>
+                        विद्यार्थी यादी व मंजुरी
                     </h3>
                     <p class="text-xs text-slate-500 mt-0.5">
                         नवीन आलेल्या विद्यार्थ्यांची पडताळणी करून त्यांना Approve (मंजूर) करा, अनोळखी असल्यास Reject करा.
@@ -148,11 +169,9 @@
                 </div>
 
                 <div class="flex items-center gap-2">
-                    <!-- रिफ्रेश बटण -->
                     <button 
                         onclick="loadStudentsList()" 
-                        class="px-3 py-2 text-xs font-bold rounded-xl bg-white border border-slate-300 text-slate-700 hover:bg-slate-100 transition flex items-center shadow-sm"
-                        title="डेटा रीलोड करा"
+                        class="px-3.5 py-2 text-xs font-bold rounded-xl bg-white border border-slate-300 text-slate-700 hover:bg-slate-100 transition flex items-center shadow-sm"
                     >
                         <i class="fa-solid fa-rotate-right mr-1.5 text-blue-600" id="refreshIcon"></i> रिफ्रेश
                     </button>
@@ -161,7 +180,6 @@
 
             <!-- शोध व स्टेटस फिल्टर बार -->
             <div class="p-4 border-b border-slate-200 bg-white flex flex-col sm:flex-row items-center justify-between gap-3">
-                <!-- सर्च बॉक्स -->
                 <div class="relative w-full sm:w-80">
                     <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-3 text-slate-400 text-xs"></i>
                     <input 
@@ -173,7 +191,6 @@
                     >
                 </div>
 
-                <!-- स्टेटस फिल्टर्स टॅब -->
                 <div class="flex items-center space-x-1.5 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0 text-xs font-bold">
                     <button onclick="setFilter('all')" id="tab_all" class="filter-tab px-3 py-1.5 rounded-lg bg-slate-900 text-white">सर्व</button>
                     <button onclick="setFilter('pending')" id="tab_pending" class="filter-tab px-3 py-1.5 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200">
@@ -185,7 +202,7 @@
                 </div>
             </div>
 
-            <!-- विद्यार्थ्यांची मुख्य टेबल (Table) -->
+            <!-- विद्यार्थ्यांची टेबल -->
             <div class="overflow-x-auto">
                 <table class="w-full text-left border-collapse text-xs">
                     <thead>
@@ -210,16 +227,234 @@
                 </table>
             </div>
 
-            <!-- रिक्त टेबल संदेश (जर कोणी सापडला नाही तर) -->
             <div id="noStudentsMsg" class="hidden py-12 text-center text-slate-400">
                 <i class="fa-solid fa-user-slash text-3xl mb-2 text-slate-300"></i>
                 <div class="font-bold text-sm text-slate-600">एकही विद्यार्थी सापडला नाही</div>
-                <p class="text-xs text-slate-400 mt-0.5">निवडलेल्या फिल्टरनुसार कोणतेही रेकॉर्ड उपलब्ध नाही.</p>
             </div>
         </div>
+
+        <!-- ==================================================================== -->
+        <!-- टॅब २: सराव पेपर्स व CSV प्रश्न अपलोड (Papers & CSV Upload Tab) -->
+        <!-- ==================================================================== -->
+        <div id="section_papersTab" class="hidden space-y-8">
+            
+            <!-- नवीन पेपर व CSV अपलोड कार्ड (Upload Box) -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="p-6 border-b border-slate-200 bg-gradient-to-r from-slate-900 to-blue-950 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div>
+                        <h3 class="text-lg font-extrabold flex items-center">
+                            <i class="fa-solid fa-cloud-arrow-up text-amber-400 mr-2.5 text-xl"></i>
+                            नवीन पेपर तयार करा व CSV प्रश्न अपलोड करा
+                        </h3>
+                        <p class="text-xs text-slate-300 mt-1">
+                            काही सेकंदांत १०० प्रश्न अपलोड करा. सेव्ह करताच हा पेपर विद्यार्थ्यांच्या डॅशबोर्डवर आपोआप दिसेल!
+                        </p>
+                    </div>
+
+                    <!-- नमुना CSV डाउनलोड बटण -->
+                    <button 
+                        type="button" 
+                        onclick="downloadSampleCsv()" 
+                        class="px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs flex items-center space-x-1.5 shadow-md transition whitespace-nowrap"
+                    >
+                        <i class="fa-solid fa-download"></i>
+                        <span>नमुना CSV डाउनलोड करा (Template)</span>
+                    </button>
+                </div>
+
+                <form id="createPaperForm" class="p-6 space-y-6">
+                    <!-- पेपर माहिती फिल्ड्स -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <div class="sm:col-span-2">
+                            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                                पेपरचे शीर्षक (Title) *
+                            </label>
+                            <input 
+                                type="text" 
+                                id="paperTitle" 
+                                required 
+                                placeholder="उदा. महाराष्ट्र पोलीस भरती सराव पेपर - संच ०२"
+                                class="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-amber-500 outline-none text-xs font-semibold"
+                            >
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                                वेळ मर्यादा (Time in Minutes) *
+                            </label>
+                            <input 
+                                type="number" 
+                                id="paperTime" 
+                                required 
+                                value="90" 
+                                min="10" 
+                                max="180"
+                                class="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-amber-500 outline-none text-xs font-semibold"
+                            >
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                                एकूण गुण (Total Marks) *
+                            </label>
+                            <input 
+                                type="number" 
+                                id="paperMarks" 
+                                required 
+                                value="100" 
+                                min="10" 
+                                max="200"
+                                class="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-amber-500 outline-none text-xs font-semibold"
+                            >
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                            पेपरचे संक्षिप्त वर्णन (Description)
+                        </label>
+                        <input 
+                            type="text" 
+                            id="paperDesc" 
+                            placeholder="उदा. मराठी व्याकरण, गणित, बुद्धिमत्ता व चालू घडामोडी या ४ विषयांवर आधारित विशेष १०० प्रश्न संच."
+                            class="w-full px-4 py-2 text-xs rounded-xl border border-slate-300 focus:ring-2 focus:ring-amber-500 outline-none"
+                        >
+                    </div>
+
+                    <!-- पर्याय टॉगल चेकबॉक्सेस -->
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+                        <label class="flex items-center space-x-2.5 text-xs text-slate-700 font-semibold cursor-pointer p-3 rounded-xl bg-slate-50 border border-slate-200">
+                            <input type="checkbox" id="paperAllowRetake" checked class="w-4 h-4 text-amber-500 rounded focus:ring-amber-400">
+                            <span>पुन्हा सोडवण्याची परवानगी द्या (Allow Retake)</span>
+                        </label>
+                        <label class="flex items-center space-x-2.5 text-xs text-slate-700 font-semibold cursor-pointer p-3 rounded-xl bg-slate-50 border border-slate-200">
+                            <input type="checkbox" id="paperShuffle" checked class="w-4 h-4 text-amber-500 rounded focus:ring-amber-400">
+                            <span>प्रश्न शफल करा (Shuffle Questions)</span>
+                        </label>
+                        <label class="flex items-center space-x-2.5 text-xs text-slate-700 font-semibold cursor-pointer p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-900">
+                            <input type="checkbox" id="paperAutoPublish" checked class="w-4 h-4 text-emerald-600 rounded focus:ring-emerald-500">
+                            <span>विद्यार्थ्यांसाठी थेट पब्लिश करा (Auto Publish)</span>
+                        </label>
+                    </div>
+
+                    <!-- CSV फाईल अपलोड सेक्शन -->
+                    <div class="border-2 border-dashed border-slate-300 rounded-2xl p-6 text-center hover:border-amber-400 bg-slate-50 transition cursor-pointer" onclick="document.getElementById('csvFileInput').click()">
+                        <input 
+                            type="file" 
+                            id="csvFileInput" 
+                            accept=".csv" 
+                            class="hidden" 
+                            onchange="handleCsvFileSelect(event)"
+                        >
+                        <div class="w-12 h-12 mx-auto rounded-full bg-amber-500/10 text-amber-600 flex items-center justify-center text-2xl mb-2">
+                            <i class="fa-solid fa-file-csv"></i>
+                        </div>
+                        <div class="font-extrabold text-sm text-slate-800">
+                            येथे क्लिक करून CSV फाईल निवडा किंवा ड्रॅग & ड्रॉप करा
+                        </div>
+                        <p class="text-xs text-slate-500 mt-1">
+                            फक्त <span class="font-bold text-amber-600">.csv</span> फॉरमॅट स्वीकारले जाईल (मराठी फॉन्टसाठी UTF-8 सुसंगत).
+                        </p>
+                        <div id="selectedCsvInfo" class="hidden mt-3 inline-flex items-center px-3 py-1 bg-emerald-100 text-emerald-800 rounded-lg text-xs font-bold">
+                            <i class="fa-solid fa-check mr-1.5"></i> <span id="selectedCsvName"></span>
+                        </div>
+                    </div>
+
+                    <!-- CSV मधील प्रश्नांचे लाइव्ह प्रिव्ह्यू (Preview Table) -->
+                    <div id="csvPreviewSection" class="hidden space-y-4 pt-4 border-t border-slate-200">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <h4 class="font-extrabold text-sm text-slate-900">
+                                    प्रश्नांची पडताळणी (Preview) — एकूण <span id="previewTotalCount" class="text-blue-700 font-black">0</span> प्रश्न आढळले
+                                </h4>
+                                <div id="subjectCountsSummary" class="flex flex-wrap gap-2 mt-1.5 text-[11px] font-bold">
+                                    <!-- विषयनिहाय मोजणी -->
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- प्रिव्ह्यू टेबल -->
+                        <div class="overflow-x-auto max-h-96 border border-slate-200 rounded-xl">
+                            <table class="w-full text-left border-collapse text-xs">
+                                <thead class="sticky top-0 bg-slate-800 text-white text-[11px] uppercase">
+                                    <tr>
+                                        <th class="py-2.5 px-3">#</th>
+                                        <th class="py-2.5 px-3">विषय</th>
+                                        <th class="py-2.5 px-3">प्रश्न मजकूर</th>
+                                        <th class="py-2.5 px-3">पर्याय (A, B, C, D)</th>
+                                        <th class="py-2.5 px-3 text-center">उत्तर</th>
+                                        <th class="py-2.5 px-3 text-center">इमेज जोडा</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="csvPreviewTbody" class="divide-y divide-slate-100 bg-white">
+                                    <!-- पंक्ती जावास्क्रिप्टने भरल्या जातील -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- सेव्ह व पब्लिश बटण -->
+                    <div class="pt-2">
+                        <button 
+                            type="submit" 
+                            id="savePaperBtn" 
+                            disabled
+                            class="w-full py-4 rounded-xl font-extrabold text-slate-950 bg-amber-500 hover:bg-amber-400 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg transition text-sm flex items-center justify-center space-x-2"
+                        >
+                            <i class="fa-solid fa-floppy-disk"></i>
+                            <span>संपूर्ण पेपर व प्रश्न सेव्ह करा (Save & Publish)</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- विद्यमान पेपर्सची यादी (Existing Papers Management) -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="p-6 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
+                    <div>
+                        <h3 class="text-base font-extrabold text-slate-900 flex items-center">
+                            <i class="fa-solid fa-list-check text-blue-600 mr-2"></i>
+                            पोर्टलवरील सर्व सराव पेपर्स
+                        </h3>
+                        <p class="text-xs text-slate-500 mt-0.5">
+                            विद्यार्थ्यांसाठी पब्लिश केलेले किंवा मसुदा (Draft) असलेले पेपर्स.
+                        </p>
+                    </div>
+                    <button 
+                        onclick="loadAdminPapersList()" 
+                        class="px-3 py-1.5 text-xs font-bold rounded-lg bg-white border border-slate-300 text-slate-700 hover:bg-slate-100 transition shadow-sm"
+                    >
+                        <i class="fa-solid fa-rotate-right mr-1"></i> रिफ्रेश
+                    </button>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse text-xs">
+                        <thead>
+                            <tr class="bg-slate-100 text-slate-600 font-bold uppercase tracking-wider text-[11px] border-b border-slate-200">
+                                <th class="py-3 px-4">#</th>
+                                <th class="py-3 px-4">पेपरचे नाव</th>
+                                <th class="py-3 px-4">वेळ व गुण</th>
+                                <th class="py-3 px-4">स्थिती</th>
+                                <th class="py-3 px-4">तयार तारीख</th>
+                                <th class="py-3 px-4 text-center">कृती (Action)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="adminPapersTableBody" class="divide-y divide-slate-100">
+                            <tr>
+                                <td colspan="6" class="py-8 text-center text-slate-400">
+                                    <i class="fa-solid fa-spinner fa-spin text-xl mb-2 text-amber-500"></i>
+                                    <div>पेपर्स लोड होत आहेत...</div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+
     </main>
 
-    <!-- ५. सामान्य फूटर -->
+    <!-- ४. सामान्य फूटर -->
     <footer class="bg-slate-900 text-slate-400 text-xs py-4 text-center border-t border-slate-800">
         महाराष्ट्र पोलीस भरती सराव परीक्षा पोर्टल &copy; २०२५-२०२६.
     </footer>
@@ -228,12 +463,14 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="supabase-config.js"></script>
 
-    <!-- ६. ॲडमिन पॅनेल लॉजिक स्क्रिप्ट -->
+    <!-- ५. मुख्य ॲडमिन स्क्रिप्ट -->
     <script>
         let allStudents = [];
+        let allPapers = [];
         let currentFilter = 'all';
+        let parsedQuestionsList = []; // CSV मधून वाचलेले प्रश्न
 
-        // ॲडमिन नाव दाखवणे
+        // ॲडमिन नाव सेट करणे
         const adminUser = JSON.parse(localStorage.getItem('pyq_user') || '{}');
         if (adminUser.full_name) {
             document.getElementById('adminName').textContent = adminUser.full_name;
@@ -253,22 +490,28 @@
             return null;
         }
 
-        // १. सर्व विद्यार्थी Supabase मधून लोड करणे
-        async function loadStudentsList() {
-            const refreshIcon = document.getElementById('refreshIcon');
-            refreshIcon.classList.add('fa-spin');
+        // मुख्य टॅब बदलणे (विद्यार्थी कक्ष / पेपर्स व CSV कक्ष)
+        function switchMainTab(tabName) {
+            document.querySelectorAll('.main-tab-btn').forEach(btn => {
+                btn.className = 'main-tab-btn px-5 py-3 border-b-2 border-transparent text-slate-500 hover:text-slate-800 flex items-center space-x-2 transition font-bold text-sm';
+            });
+            document.getElementById('btnMainTab_' + (tabName === 'studentsTab' ? 'students' : 'papers')).className = 'main-tab-btn px-5 py-3 border-b-2 border-amber-500 text-amber-600 flex items-center space-x-2 font-bold text-sm';
 
-            const client = getSupabaseClient();
-            if (!client) {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Supabase जोडलेले नाही',
-                    text: 'कृपया supabase-config.js मध्ये योग्य माहिती तपासा.',
-                    confirmButtonColor: '#dc2626'
-                });
-                refreshIcon.classList.remove('fa-spin');
-                return;
+            document.getElementById('section_studentsTab').classList.add('hidden');
+            document.getElementById('section_papersTab').classList.add('hidden');
+            document.getElementById('section_' + tabName).classList.remove('hidden');
+
+            if (tabName === 'papersTab') {
+                loadAdminPapersList();
             }
+        }
+
+        // ====================================================================
+        // १. विद्यार्थी व्यवस्थापन (Student Management)
+        // ====================================================================
+        async function loadStudentsList() {
+            const client = getSupabaseClient();
+            if (!client) return;
 
             try {
                 const { data, error } = await client
@@ -277,26 +520,15 @@
                     .order('created_at', { ascending: false });
 
                 if (error) throw error;
-
                 allStudents = data || [];
-                updateStats();
+                updateDashboardStats();
                 filterStudentsTable();
-
             } catch (err) {
                 console.error("विद्यार्थी लोड त्रुटी:", err);
-                Swal.fire({
-                    icon: 'error',
-                    title: 'डेटा लोड त्रुटी',
-                    text: (err && err.message) ? err.message : 'माहिती लोड करताना अडचण आली.',
-                    confirmButtonColor: '#dc2626'
-                });
-            } finally {
-                refreshIcon.classList.remove('fa-spin');
             }
         }
 
-        // २. वरचे आकडे (Stats) अपडेट करणे
-        function updateStats() {
+        function updateDashboardStats() {
             const studentsOnly = allStudents.filter(s => s.role !== 'admin');
             const total = studentsOnly.length;
             const pending = studentsOnly.filter(s => s.status === 'pending' || !s.is_approved).length;
@@ -308,7 +540,6 @@
             document.getElementById('filterCountPending').textContent = pending;
         }
 
-        // ३. स्टेटस फिल्टर सेट करणे
         function setFilter(filter) {
             currentFilter = filter;
             document.querySelectorAll('.filter-tab').forEach(tab => {
@@ -321,7 +552,6 @@
             filterStudentsTable();
         }
 
-        // ४. टेबल रेंडर व सर्च फिल्टर
         function filterStudentsTable() {
             const searchTerm = document.getElementById('studentSearch').value.trim().toLowerCase();
             const tbody = document.getElementById('studentsTableBody');
@@ -375,10 +605,10 @@
                 if (st.status === 'pending' || !st.is_approved) {
                     actionBtns = `
                         <div class="flex items-center justify-center space-x-1.5">
-                            <button onclick="updateStudentStatus('${st.id}', 'approved')" class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg font-bold text-[11px] transition shadow-sm flex items-center">
+                            <button onclick="updateStudentStatus('${st.id}', 'approved')" class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg font-bold text-[11px] transition shadow-sm">
                                 <i class="fa-solid fa-check mr-1"></i> Approve
                             </button>
-                            <button onclick="updateStudentStatus('${st.id}', 'rejected')" class="px-2.5 py-1 bg-rose-600 hover:bg-rose-500 text-white rounded-lg font-bold text-[11px] transition shadow-sm flex items-center">
+                            <button onclick="updateStudentStatus('${st.id}', 'rejected')" class="px-2.5 py-1 bg-rose-600 hover:bg-rose-500 text-white rounded-lg font-bold text-[11px] transition shadow-sm">
                                 <i class="fa-solid fa-xmark mr-1"></i> Reject
                             </button>
                         </div>
@@ -386,19 +616,8 @@
                 } else if (st.status === 'approved') {
                     actionBtns = `
                         <div class="flex items-center justify-center space-x-1.5">
-                            <button onclick="updateStudentStatus('${st.id}', 'deactivated')" class="px-2.5 py-1 bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-lg font-bold text-[11px] transition shadow-sm flex items-center">
-                                <i class="fa-solid fa-pause mr-1"></i> बंद करा (Deactivate)
-                            </button>
-                            <button onclick="deleteStudent('${st.id}', '${st.full_name}')" class="p-1 text-slate-400 hover:text-rose-600 transition" title="हटवा">
-                                <i class="fa-solid fa-trash-can"></i>
-                            </button>
-                        </div>
-                    `;
-                } else if (st.status === 'deactivated') {
-                    actionBtns = `
-                        <div class="flex items-center justify-center space-x-1.5">
-                            <button onclick="updateStudentStatus('${st.id}', 'approved')" class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg font-bold text-[11px] transition shadow-sm flex items-center">
-                                <i class="fa-solid fa-play mr-1"></i> पुन्हा सुरू करा
+                            <button onclick="updateStudentStatus('${st.id}', 'deactivated')" class="px-2.5 py-1 bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-lg font-bold text-[11px] transition shadow-sm">
+                                <i class="fa-solid fa-pause mr-1"></i> Deactivate
                             </button>
                             <button onclick="deleteStudent('${st.id}', '${st.full_name}')" class="p-1 text-slate-400 hover:text-rose-600 transition" title="हटवा">
                                 <i class="fa-solid fa-trash-can"></i>
@@ -408,7 +627,7 @@
                 } else {
                     actionBtns = `
                         <div class="flex items-center justify-center space-x-1.5">
-                            <button onclick="updateStudentStatus('${st.id}', 'approved')" class="px-2.5 py-1 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-bold text-[11px] transition shadow-sm flex items-center">
+                            <button onclick="updateStudentStatus('${st.id}', 'approved')" class="px-2.5 py-1 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-bold text-[11px] transition shadow-sm">
                                 <i class="fa-solid fa-rotate-left mr-1"></i> मंजूर करा
                             </button>
                             <button onclick="deleteStudent('${st.id}', '${st.full_name}')" class="p-1 text-slate-400 hover:text-rose-600 transition" title="हटवा">
@@ -423,11 +642,10 @@
                         <td class="py-3 px-4 font-bold text-slate-400">${idx + 1}</td>
                         <td class="py-3 px-4">
                             <div class="font-extrabold text-slate-900 text-sm">${st.full_name}</div>
-                            <div class="text-[10px] text-slate-400">ID: ${st.id.substring(0, 8)}...</div>
                         </td>
                         <td class="py-3 px-4">
-                            <div class="font-bold text-slate-800"><i class="fa-solid fa-phone text-slate-400 mr-1"></i>${st.mobile}</div>
-                            <div class="text-slate-500 text-[11px]"><i class="fa-solid fa-envelope text-slate-400 mr-1"></i>${st.email}</div>
+                            <div class="font-bold text-slate-800">${st.mobile}</div>
+                            <div class="text-slate-500 text-[11px]">${st.email}</div>
                         </td>
                         <td class="py-3 px-4">
                             <span class="px-2 py-0.5 rounded bg-slate-100 border border-slate-200 text-slate-700 font-semibold text-[11px]">
@@ -444,25 +662,15 @@
             tbody.innerHTML = html;
         }
 
-        // ५. विद्यार्थ्याची स्थिती अपडेट करणे (Approve / Reject / Deactivate)
         async function updateStudentStatus(studentId, newStatus) {
             const client = getSupabaseClient();
             if (!client) return;
 
             const isApproved = (newStatus === 'approved');
-            let actionText = '';
-            if (newStatus === 'approved') actionText = 'मंजूर (Approve)';
-            else if (newStatus === 'rejected') actionText = 'रद्द (Reject)';
-            else if (newStatus === 'deactivated') actionText = 'बंद (Deactivate)';
-
             try {
                 const { error } = await client
                     .from('students')
-                    .update({ 
-                        status: newStatus, 
-                        is_approved: isApproved, 
-                        updated_at: new Date().toISOString() 
-                    })
+                    .update({ status: newStatus, is_approved: isApproved, updated_at: new Date().toISOString() })
                     .eq('id', studentId);
 
                 if (error) throw error;
@@ -472,46 +680,32 @@
                     target.status = newStatus;
                     target.is_approved = isApproved;
                 }
-
-                updateStats();
+                updateDashboardStats();
                 filterStudentsTable();
 
-                const toast = Swal.mixin({
-                    toast: true,
-                    position: 'top-end',
-                    showConfirmButton: false,
-                    timer: 2000,
-                    timerProgressBar: true
-                });
-                toast.fire({
-                    icon: 'success',
-                    title: `विद्यार्थी खाते ${actionText} केले!`
-                });
-
-            } catch (err) {
-                console.error("स्थिती बदल त्रुटी:", err);
                 Swal.fire({
-                    icon: 'error',
-                    title: 'त्रुटी',
-                    text: (err && err.message) ? err.message : 'बदल करताना अडचण आली.',
-                    confirmButtonColor: '#dc2626'
+                    icon: 'success',
+                    title: 'यशस्वी!',
+                    text: `विद्यार्थी खाते ${newStatus === 'approved' ? 'मंजूर' : (newStatus === 'rejected' ? 'रद्द' : 'बंद')} केले.`,
+                    timer: 1500,
+                    showConfirmButton: false
                 });
+            } catch (err) {
+                console.error(err);
+                Swal.fire({ icon: 'error', title: 'त्रुटी', text: err.message });
             }
         }
 
-        // ६. विद्यार्थी कायमचा हटवणे (Delete)
         async function deleteStudent(studentId, name) {
             const result = await Swal.fire({
                 title: 'विद्यार्थी हटवायचा आहे का?',
-                text: `${name} चे खाते आणि सर्व डेटा कायमचा काढून टाकला जाईल.`,
+                text: `${name} चे खाते कायमचे काढून टाकले जाईल.`,
                 icon: 'warning',
                 showCancelButton: true,
                 confirmButtonColor: '#dc2626',
-                cancelButtonColor: '#64748b',
                 confirmButtonText: 'होय, हटवा',
                 cancelButtonText: 'रद्द करा'
             });
-
             if (!result.isConfirmed) return;
 
             const client = getSupabaseClient();
@@ -520,39 +714,529 @@
             try {
                 const { error } = await client.from('students').delete().eq('id', studentId);
                 if (error) throw error;
-
                 allStudents = allStudents.filter(s => s.id !== studentId);
-                updateStats();
+                updateDashboardStats();
                 filterStudentsTable();
-
-                Swal.fire({
-                    icon: 'success',
-                    title: 'हटवले!',
-                    text: 'विद्यार्थी खाते यशस्वीरित्या हटवले गेले.',
-                    timer: 1500,
-                    showConfirmButton: false
-                });
-
             } catch (err) {
-                console.error("हटवताना त्रुटी:", err);
-                Swal.fire({
-                    icon: 'error',
-                    title: 'त्रुटी',
-                    text: (err && err.message) ? err.message : 'विद्यार्थी हटवता आला नाही.',
-                    confirmButtonColor: '#dc2626'
-                });
+                Swal.fire({ icon: 'error', title: 'त्रुटी', text: err.message });
             }
         }
 
-        // ७. ॲडमिन लॉगआउट
+        // ====================================================================
+        // २. सराव पेपर्स व CSV प्रश्न अपलोड (Papers & CSV Upload Logic)
+        // ====================================================================
+
+        // अ) नमुना CSV डाऊनलोड (UTF-8 BOM सह - Excel साठी १००% सुसंगत)
+        function downloadSampleCsv() {
+            const bom = "\uFEFF"; // मराठी फॉन्टसाठी BOM
+            const header = "subject,question_text,option_a,option_b,option_c,option_d,correct_option,explanation\n";
+            const sampleRows = [
+                '"मराठी व्याकरण","खालीलपैकी कोणता स्वर संयुक्त स्वर नाही?","ए","ऐ","ओ","ई","D","ई हा दीर्घ स्वर आहे; ए, ऐ, ओ, औ हे संयुक्त स्वर आहेत."',
+                '"मराठी व्याकरण","\\"वाघाने गाय मारली\\" या वाक्यातील प्रयोग ओळखा.","कर्तरी प्रयोग","कर्मणी प्रयोग","भावे प्रयोग","संकीर्ण प्रयोग","C","यात कर्त्याला आणि कर्माला प्रत्यय असल्याने हा भावे प्रयोग आहे."',
+                '"अंकगणित","दोन संख्यांचे गुणोत्तर ३:५ असून त्यांची बेरीज २४० आहे, तर मोठी संख्या कोणती?","९०","१२०","१५०","१६०","C","३x + ५x = २४० => x = ३०. मोठी संख्या = ५ * ३० = १५०."',
+                '"अंकगणित","ताशी ६० किमी वेगाने धावणारी १८० मीटर लांबीची आगगाडी एका खांबाला किती सेकंदात ओलांडेल?","९ सेकंद","१०.८ सेकंद","१२ सेकंद","१५ सेकंद","B","वेग = ६० * ५/१८ = ५०/३ मी/सेकंद. वेळ = १८० / (५०/३) = १०.८ सेकंद."',
+                '"बुद्धिमत्ता चाचणी","संख्या मालिका पूर्ण करा: ४, ९, १६, २५, ३६, ?","४५","४९","५४","६४","B","वर्गांची मालिका आहे (७ चा वर्ग = ४९)."',
+                '"बुद्धिमत्ता चाचणी","जर CAT = २४ आणि DOG = २६, तर POLICE = ?","६०","६५","७०","७५","A","अक्षरांच्या वर्णमालेतील क्रमांकांची बेरीज = ६०."',
+                '"सामान्य ज्ञान व चालू घडामोडी","महाराष्ट्र राज्याची स्थापना कोणत्या दिवशी झाली?","१ मे १९५०","१ मे १९६०","१५ ऑगस्ट १९४७","२६ जानेवारी १९५०","B","१ मे १९६० रोजी महाराष्ट्र राज्य स्थापन झाले."',
+                '"सामान्य ज्ञान व चालू घडामोडी","महाराष्ट्र पोलीस दलाचे मुख्यालय कोठे आहे?","पुणे","नागपूर","मुंबई","नाशिक","C","महाराष्ट्र पोलीस मुख्यालयाची मुख्य इमारत कुलाबा, मुंबई येथे आहे."'
+            ].join("\n");
+
+            const blob = new Blob([bom + header + sampleRows], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = "पोलीस_भरती_नमुना_प्रश्न_CSV.csv";
+            link.click();
+        }
+
+        // ब) सुरक्षित व लवचिक CSV पार्सर (Comma किंवा Semicolon, Quotes व Devanagari सुसंगत)
+        function parseCsvText(text) {
+            const lines = [];
+            let row = [];
+            let inQuotes = false;
+            let field = '';
+
+            // UTF-8 BOM काढून टाकणे
+            if (text.charCodeAt(0) === 0xFEFF) {
+                text = text.slice(1);
+            }
+
+            // कॉमा (,) किंवा सेमीकोलन (;) ऑटो-डिटेक्ट करणे
+            const firstLine = text.split(/\r\n|\n|\r/)[0] || '';
+            const commaCount = (firstLine.match(/,/g) || []).length;
+            const semiCount = (firstLine.match(/;/g) || []).length;
+            const delimiter = semiCount > commaCount ? ';' : ',';
+
+            for (let i = 0; i < text.length; i++) {
+                const char = text[i];
+                const nextChar = text[i + 1];
+
+                if (char === '"') {
+                    if (inQuotes && nextChar === '"') {
+                        field += '"';
+                        i++;
+                    } else {
+                        inQuotes = !inQuotes;
+                    }
+                } else if (char === delimiter && !inQuotes) {
+                    row.push(field.trim());
+                    field = '';
+                } else if ((char === '\r' || char === '\n') && !inQuotes) {
+                    if (char === '\r' && nextChar === '\n') {
+                        i++;
+                    }
+                    row.push(field.trim());
+                    field = '';
+                    if (row.length > 1 || (row.length === 1 && row[0] !== '')) {
+                        lines.push(row);
+                    }
+                    row = [];
+                } else {
+                    field += char;
+                }
+            }
+            if (field || row.length > 0) {
+                row.push(field.trim());
+                lines.push(row);
+            }
+            return lines;
+        }
+
+        // योग्य पर्याय नॉर्मलाइज करणे (1/2/3/4 किंवा अ/ब/क/ड किंवा A/B/C/D -> A, B, C, D)
+        function normalizeOptionChoice(val) {
+            if (!val) return 'A';
+            const s = val.toString().trim().toUpperCase();
+            if (s === '1' || s === 'अ' || s === 'A' || s.includes('पर्याय 1') || s.includes('पर्याय अ') || s.includes('OPTION A')) return 'A';
+            if (s === '2' || s === 'ब' || s === 'B' || s.includes('पर्याय 2') || s.includes('पर्याय ब') || s.includes('OPTION B')) return 'B';
+            if (s === '3' || s === 'क' || s === 'C' || s.includes('पर्याय 3') || s.includes('पर्याय क') || s.includes('OPTION C')) return 'C';
+            if (s === '4' || s === 'ड' || s === 'D' || s.includes('पर्याय 4') || s.includes('पर्याय ड') || s.includes('OPTION D')) return 'D';
+            if (['A', 'B', 'C', 'D'].includes(s[0])) return s[0];
+            return 'A';
+        }
+
+        // विषयाचे नाव सुसंगत करणे
+        function normalizeSubjectName(sub) {
+            if (!sub) return 'सामान्य ज्ञान व चालू घडामोडी';
+            const s = sub.trim().toLowerCase();
+            if (s.includes('मराठी') || s.includes('marathi') || s.includes('व्याकरण')) return 'मराठी व्याकरण';
+            if (s.includes('अंकगणित') || s.includes('गणित') || s.includes('math') || s.includes('arithmetic')) return 'अंकगणित';
+            if (s.includes('बुद्धिमत्ता') || s.includes('reasoning') || s.includes('intellect')) return 'बुद्धिमत्ता चाचणी';
+            if (s.includes('सामान्य') || s.includes('चालू') || s.includes('gk') || s.includes('knowledge') || s.includes('current')) return 'सामान्य ज्ञान व चालू घडामोडी';
+            return sub.trim();
+        }
+
+        // क) CSV फाईल निवडल्यावर ती वाचणे व प्रिव्ह्यू दाखवणे
+        function handleCsvFileSelect(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            document.getElementById('selectedCsvInfo').classList.remove('hidden');
+            document.getElementById('selectedCsvName').textContent = file.name;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const content = e.target.result;
+                const rows = parseCsvText(content);
+
+                if (rows.length < 2) {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'रिकामी CSV फाईल',
+                        text: 'निवडलेल्या CSV फाईलमध्ये प्रश्न आढळले नाहीत. कृपया नमुना फाईल तपासा.',
+                        confirmButtonColor: '#f59e0b'
+                    });
+                    return;
+                }
+
+                // हेडर तपासून डेटा मॅप करणे
+                const questions = [];
+                const subjectCounts = {};
+
+                // row ० हेडर मानून row १ पासून प्रश्न घेणे
+                for (let i = 1; i < rows.length; i++) {
+                    const r = rows[i];
+                    if (!r || r.length < 7 || !r[1]) continue;
+
+                    const q = {
+                        subject: normalizeSubjectName(r[0]),
+                        question_text: r[1] ? r[1].trim() : '',
+                        option_a: r[2] ? r[2].trim() : '',
+                        option_b: r[3] ? r[3].trim() : '',
+                        option_c: r[4] ? r[4].trim() : '',
+                        option_d: r[5] ? r[5].trim() : '',
+                        correct_option: normalizeOptionChoice(r[6]),
+                        explanation: r[7] ? r[7].trim() : '',
+                        image_url: '' // इमेज नंतर जोडता येईल
+                    };
+
+                    questions.push(q);
+                    subjectCounts[q.subject] = (subjectCounts[q.subject] || 0) + 1;
+                }
+
+                parsedQuestionsList = questions;
+                renderCsvPreview(questions, subjectCounts);
+
+                // जर पेपरचे एकूण गुण प्रश्नांच्या संख्येएवढे ठेवायचे असतील तर ऑटो-सेट करा
+                const marksInput = document.getElementById('paperMarks');
+                if (marksInput && (!marksInput.value || marksInput.value === '100')) {
+                    marksInput.value = questions.length;
+                }
+            };
+
+            reader.readAsText(file, 'UTF-8');
+        }
+
+        // प्रिव्ह्यूमधून प्रश्न काढून टाकणे
+        function removeQuestionFromPreview(idx) {
+            parsedQuestionsList.splice(idx, 1);
+            const subjectCounts = {};
+            parsedQuestionsList.forEach(q => subjectCounts[q.subject] = (subjectCounts[q.subject] || 0) + 1);
+            renderCsvPreview(parsedQuestionsList, subjectCounts);
+            const marksInput = document.getElementById('paperMarks');
+            if (marksInput) {
+                marksInput.value = parsedQuestionsList.length;
+            }
+        }
+
+        // ड) प्रिव्ह्यू टेबल रेंडर करणे
+        function renderCsvPreview(questions, subjectCounts) {
+            const previewSection = document.getElementById('csvPreviewSection');
+            const tbody = document.getElementById('csvPreviewTbody');
+            const countSpan = document.getElementById('previewTotalCount');
+            const summaryDiv = document.getElementById('subjectCountsSummary');
+            const saveBtn = document.getElementById('savePaperBtn');
+
+            if (questions.length === 0) {
+                previewSection.classList.add('hidden');
+                saveBtn.disabled = true;
+                return;
+            }
+
+            countSpan.textContent = questions.length;
+            
+            // विषयनिहाय चिप्स
+            let summaryHtml = '';
+            for (const [sub, cnt] of Object.entries(subjectCounts)) {
+                summaryHtml += `<span class="bg-blue-50 text-blue-800 px-2.5 py-1 rounded-md border border-blue-200 text-xs font-semibold">${sub}: ${cnt} प्रश्न</span>`;
+            }
+            summaryDiv.innerHTML = summaryHtml;
+
+            // टेबल पंक्ती
+            let rowsHtml = '';
+            questions.forEach((q, idx) => {
+                rowsHtml += `
+                    <tr class="hover:bg-slate-50 transition border-b border-slate-100">
+                        <td class="py-2.5 px-3 font-bold text-slate-400">${idx + 1}</td>
+                        <td class="py-2.5 px-3 font-semibold text-slate-700 whitespace-nowrap">${q.subject}</td>
+                        <td class="py-2.5 px-3 font-medium text-slate-900 max-w-xs">
+                            <div class="line-clamp-2 leading-relaxed">${q.question_text}</div>
+                            ${q.image_url ? `<img src="${q.image_url}" class="h-10 mt-1 rounded border border-slate-300">` : ''}
+                        </td>
+                        <td class="py-2.5 px-3 text-[11px] text-slate-600">
+                            <div><b class="text-slate-800">A:</b> ${q.option_a}</div>
+                            <div><b class="text-slate-800">B:</b> ${q.option_b}</div>
+                            <div><b class="text-slate-800">C:</b> ${q.option_c}</div>
+                            <div><b class="text-slate-800">D:</b> ${q.option_d}</div>
+                        </td>
+                        <td class="py-2.5 px-3 text-center">
+                            <span class="inline-block w-6 h-6 leading-6 bg-emerald-100 text-emerald-800 font-extrabold rounded-full shadow-sm">
+                                ${q.correct_option}
+                            </span>
+                        </td>
+                        <td class="py-2.5 px-3 text-center whitespace-nowrap space-x-1">
+                            <label class="cursor-pointer px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded text-[11px] font-bold border border-slate-300 inline-flex items-center" title="आकृती/इमेज जोडा">
+                                <i class="fa-solid fa-image mr-1 text-amber-600"></i> ${q.image_url ? 'बदला' : 'फोटो'}
+                                <input type="file" accept="image/*" class="hidden" onchange="attachImageToQuestion(${idx}, event)">
+                            </label>
+                            <button type="button" onclick="removeQuestionFromPreview(${idx})" class="p-1 text-slate-400 hover:text-rose-600 transition" title="हा प्रश्न हटवा">
+                                <i class="fa-solid fa-trash-can"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            tbody.innerHTML = rowsHtml;
+            previewSection.classList.remove('hidden');
+            saveBtn.disabled = false;
+        }
+                            </label>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            tbody.innerHTML = rowsHtml;
+            previewSection.classList.remove('hidden');
+            saveBtn.disabled = false;
+        }
+
+        // ई) आकृती / इमेज जोडणे (Auto-compressed to WebP)
+        function attachImageToQuestion(qIndex, event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = new Image();
+                img.onload = function() {
+                    const canvas = document.createElement('canvas');
+                    let width = img.width;
+                    let height = img.height;
+                    const max = 700;
+                    if (width > height && width > max) {
+                        height = Math.round((height * max) / width);
+                        width = max;
+                    } else if (height > max) {
+                        width = Math.round((width * max) / height);
+                        height = max;
+                    }
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+
+                    const compressedWebP = canvas.toDataURL('image/webp', 0.8);
+                    parsedQuestionsList[qIndex].image_url = compressedWebP;
+
+                    // पुन्हा रेंडर करणे
+                    const subjectCounts = {};
+                    parsedQuestionsList.forEach(q => subjectCounts[q.subject] = (subjectCounts[q.subject] || 0) + 1);
+                    renderCsvPreview(parsedQuestionsList, subjectCounts);
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // फ) संपूर्ण पेपर व प्रश्न Supabase मध्ये सेव्ह करणे
+        const createPaperForm = document.getElementById('createPaperForm');
+        createPaperForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            if (parsedQuestionsList.length === 0) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'प्रश्न आढळले नाहीत',
+                    text: 'कृपया आधी CSV फाईल निवडून प्रश्न अपलोड करा.',
+                    confirmButtonColor: '#f59e0b'
+                });
+                return;
+            }
+
+            const client = getSupabaseClient();
+            if (!client) {
+                Swal.fire({ icon: 'error', title: 'त्रुटी', text: 'Supabase शी संपर्क होऊ शकला नाही.' });
+                return;
+            }
+
+            const title = document.getElementById('paperTitle').value.trim();
+            const timeMinutes = parseInt(document.getElementById('paperTime').value) || 90;
+            const totalMarks = parseInt(document.getElementById('paperMarks').value) || parsedQuestionsList.length;
+            const description = document.getElementById('paperDesc').value.trim();
+            const allowRetake = document.getElementById('paperAllowRetake').checked;
+            const shuffle = document.getElementById('paperShuffle').checked;
+            const autoPublish = document.getElementById('paperAutoPublish').checked;
+
+            const saveBtn = document.getElementById('savePaperBtn');
+            saveBtn.disabled = true;
+            saveBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> पेपर सेव्ह होत आहे...';
+
+            try {
+                // १. papers टेबलमध्ये नवीन पेपर इन्सर्ट करणे
+                const paperPayload = {
+                    title: title,
+                    description: description || 'पोलीस भरती सराव प्रश्नसंच.',
+                    time_minutes: timeMinutes,
+                    total_marks: totalMarks,
+                    allow_retake: allowRetake,
+                    shuffle_questions: shuffle,
+                    show_leaderboard: true,
+                    is_published: autoPublish
+                };
+
+                const { data: paperData, error: paperError } = await client
+                    .from('papers')
+                    .insert([paperPayload])
+                    .select();
+
+                if (paperError) throw paperError;
+                const newPaperId = paperData[0].id;
+
+                // २. questions टेबलमध्ये सर्व प्रश्न इन्सर्ट करणे
+                const questionsPayload = parsedQuestionsList.map((q, idx) => ({
+                    paper_id: newPaperId,
+                    subject: q.subject,
+                    question_text: q.question_text,
+                    option_a: q.option_a,
+                    option_b: q.option_b,
+                    option_c: q.option_c,
+                    option_d: q.option_d,
+                    correct_option: q.correct_option,
+                    explanation: q.explanation || '',
+                    image_url: q.image_url || '',
+                    question_order: idx + 1
+                }));
+
+                // बॅच इन्सर्ट (५०-५० चे तुकडे)
+                const chunkSize = 50;
+                for (let i = 0; i < questionsPayload.length; i += chunkSize) {
+                    const chunk = questionsPayload.slice(i, i + chunkSize);
+                    const { error: qErr } = await client.from('questions').insert(chunk);
+                    if (qErr) throw qErr;
+                }
+
+                // ३. यशस्वी संदेश
+                Swal.fire({
+                    icon: 'success',
+                    title: 'अभिनंदन! पेपर सेव्ह झाला 🎉',
+                    html: `
+                        <div class="text-xs text-slate-600 mt-2">
+                            <b>${title}</b> हा पेपर ${parsedQuestionsList.length} प्रश्नांसह यशस्वीरित्या सेव्ह झाला आहे.<br>
+                            ${autoPublish ? '<span class="text-emerald-700 font-bold mt-1 inline-block">✅ हा पेपर विद्यार्थ्यांच्या डॅशबोर्डवर तात्काळ दिसण्यास सुरू झाला आहे!</span>' : ''}
+                        </div>
+                    `,
+                    confirmButtonColor: '#10b981',
+                    confirmButtonText: 'ठीक आहे'
+                });
+
+                // फॉर्म रीसेट
+                createPaperForm.reset();
+                document.getElementById('csvPreviewSection').classList.add('hidden');
+                document.getElementById('selectedCsvInfo').classList.add('hidden');
+                parsedQuestionsList = [];
+                saveBtn.disabled = true;
+                saveBtn.innerHTML = '<i class="fa-solid fa-floppy-disk mr-1"></i> संपूर्ण पेपर व प्रश्न सेव्ह करा (Save & Publish)';
+
+                // पेपर्स यादी रीलोड
+                loadAdminPapersList();
+
+            } catch (err) {
+                console.error("पेपर सेव्ह त्रुटी:", err);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'पेपर सेव्ह त्रुटी',
+                    text: err.message || 'पेपर सेव्ह करताना तांत्रिक अडचण आली.',
+                    confirmButtonColor: '#dc2626'
+                });
+                saveBtn.disabled = false;
+                saveBtn.innerHTML = '<i class="fa-solid fa-floppy-disk mr-1"></i> पुन्हा प्रयत्न करा';
+            }
+        });
+
+        // ग) विद्यमान पेपर्सची यादी लोड करणे
+        async function loadAdminPapersList() {
+            const client = getSupabaseClient();
+            if (!client) return;
+
+            const tbody = document.getElementById('adminPapersTableBody');
+
+            try {
+                const { data, error } = await client
+                    .from('papers')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+
+                if (error) throw error;
+                allPapers = data || [];
+                document.getElementById('statTotalPapers').textContent = allPapers.length;
+
+                if (allPapers.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="6" class="py-8 text-center text-slate-400">एकही पेपर उपलब्ध नाही. वरून नवीन पेपर तयार करा.</td></tr>`;
+                    return;
+                }
+
+                let html = '';
+                allPapers.forEach((p, idx) => {
+                    const dateStr = p.created_at ? new Date(p.created_at).toLocaleDateString('mr-IN') : '--';
+                    const isPub = p.is_published;
+
+                    html += `
+                        <tr class="hover:bg-slate-50 transition">
+                            <td class="py-3 px-4 font-bold text-slate-400">${idx + 1}</td>
+                            <td class="py-3 px-4">
+                                <div class="font-extrabold text-slate-900 text-sm">${p.title}</div>
+                                <div class="text-[11px] text-slate-500 line-clamp-1">${p.description || ''}</div>
+                            </td>
+                            <td class="py-3 px-4 whitespace-nowrap font-semibold text-slate-700">
+                                <div><i class="fa-solid fa-clock text-amber-500 mr-1"></i> ${p.time_minutes} मिनिटे</div>
+                                <div class="text-[11px] text-blue-700 font-bold">${p.total_marks} गुण</div>
+                            </td>
+                            <td class="py-3 px-4 whitespace-nowrap">
+                                <button onclick="togglePaperPublish('${p.id}', ${!isPub})" class="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold ${isPub ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-200 text-slate-600'}">
+                                    <span class="w-1.5 h-1.5 rounded-full ${isPub ? 'bg-emerald-500' : 'bg-slate-400'} mr-1.5"></span>
+                                    ${isPub ? 'पब्लिश (सक्रिय)' : 'लपवलेला (Hidden)'}
+                                </button>
+                            </td>
+                            <td class="py-3 px-4 text-slate-500 font-medium whitespace-nowrap">${dateStr}</td>
+                            <td class="py-3 px-4 text-center whitespace-nowrap">
+                                <button onclick="deletePaper('${p.id}', '${p.title}')" class="p-1.5 text-slate-400 hover:text-rose-600 transition" title="पेपर हटवा">
+                                    <i class="fa-solid fa-trash-can text-sm"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                });
+
+                tbody.innerHTML = html;
+
+            } catch (err) {
+                console.error("पेपर्स लोड त्रुटी:", err);
+            }
+        }
+
+        // घ) पेपर पब्लिश / अनपब्लिश टॉगल करणे
+        async function togglePaperPublish(paperId, newStatus) {
+            const client = getSupabaseClient();
+            if (!client) return;
+
+            try {
+                const { error } = await client
+                    .from('papers')
+                    .update({ is_published: newStatus, updated_at: new Date().toISOString() })
+                    .eq('id', paperId);
+
+                if (error) throw error;
+                loadAdminPapersList();
+
+                const toast = Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 1500 });
+                toast.fire({ icon: 'success', title: newStatus ? 'पेपर पब्लिश केला!' : 'पेपर लपवला!' });
+            } catch (err) {
+                Swal.fire({ icon: 'error', title: 'त्रुटी', text: err.message });
+            }
+        }
+
+        // ङ) पेपर हटवणे
+        async function deletePaper(paperId, title) {
+            const res = await Swal.fire({
+                title: 'पेपर हटवायचा आहे का?',
+                text: `"${title}" आणि त्यातील सर्व प्रश्न कायमचे काढून टाकले जातील.`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#dc2626',
+                confirmButtonText: 'होय, हटवा',
+                cancelButtonText: 'रद्द करा'
+            });
+            if (!res.isConfirmed) return;
+
+            const client = getSupabaseClient();
+            if (!client) return;
+
+            try {
+                const { error } = await client.from('papers').delete().eq('id', paperId);
+                if (error) throw error;
+                loadAdminPapersList();
+            } catch (err) {
+                Swal.fire({ icon: 'error', title: 'त्रुटी', text: err.message });
+            }
+        }
+
+        // लॉगआउट
         function adminLogout() {
             Swal.fire({
                 title: 'लॉगआउट करायचे आहे का?',
-                text: 'तुम्ही ॲडमिन पॅनेलमधून बाहेर पडाल.',
                 icon: 'question',
                 showCancelButton: true,
                 confirmButtonColor: '#d97706',
-                cancelButtonColor: '#64748b',
                 confirmButtonText: 'होय, लॉगआउट करा',
                 cancelButtonText: 'रद्द करा'
             }).then((result) => {
@@ -563,7 +1247,6 @@
             });
         }
 
-        // पेज लोड झाल्यावर डेटा लोड करणे
         document.addEventListener('DOMContentLoaded', () => {
             loadStudentsList();
         });
