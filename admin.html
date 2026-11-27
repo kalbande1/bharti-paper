@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="mr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ॲडमिन पॅनेल | महाराष्ट्र पोलीस भरती परीक्षा पोर्टल</title>
+    <!-- Google Fonts: Noto Sans Devanagari & Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+Devanagari:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome Icons CDN -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- SweetAlert2 CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <!-- सानुकूल स्टाइलशीट -->
+    <link rel="stylesheet" href="style.css">
+    <style>
+        body {
+            font-family: 'Noto Sans Devanagari', 'Inter', sans-serif;
+            background-color: #f1f5f9;
+        }
+    </style>
+</head>
+<body class="bg-slate-100 text-slate-800 min-h-screen flex flex-col justify-between">
+
+    <!-- १. ॲडमिन सुरक्षितता तपासणी (पेज उघडण्यापूर्वी) -->
+    <script>
+        const savedUser = localStorage.getItem('pyq_user');
+        if (!savedUser) {
+            window.location.href = 'login.html';
+        } else {
+            try {
+                const u = JSON.parse(savedUser);
+                if (u.role !== 'admin') {
+                    window.location.href = 'dashboard.html';
+                }
+            } catch(e) {
+                window.location.href = 'login.html';
+            }
+        }
+    </script>
+
+    <!-- २. ॲडमिन नेव्हिगेशन हेडर -->
+    <header class="bg-slate-900 border-b border-slate-800 text-white sticky top-0 z-50 shadow-md">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-full bg-amber-500 text-slate-950 flex items-center justify-center font-bold text-xl shadow-lg border-2 border-amber-300">
+                    <i class="fa-solid fa-user-shield"></i>
+                </div>
+                <div>
+                    <h1 class="font-extrabold text-base sm:text-lg leading-tight text-white flex items-center gap-2">
+                        <span>पोलीस भरती प्रशासकीय कक्ष</span>
+                        <span class="text-[10px] bg-amber-500 text-slate-950 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">ॲडमिन पॅनेल</span>
+                    </h1>
+                    <p class="text-xs text-slate-400">विद्यार्थी मंजुरी व परीक्षा नियंत्रण केंद्र</p>
+                </div>
+            </div>
+
+            <!-- ॲडमिन प्रोफाईल व लॉगआउट बटण -->
+            <div class="flex items-center space-x-3">
+                <div class="hidden sm:block text-right">
+                    <div id="adminName" class="text-xs font-bold text-slate-200">मुख्य प्रशासक</div>
+                    <div class="text-[10px] text-emerald-400 font-semibold flex items-center justify-end">
+                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 mr-1 animate-pulse"></span> ऑनलाइन
+                    </div>
+                </div>
+                <button 
+                    onclick="adminLogout()" 
+                    class="px-3.5 py-2 text-xs font-bold rounded-xl bg-slate-800 text-rose-300 hover:bg-rose-950 hover:text-rose-200 border border-slate-700 transition flex items-center shadow-sm"
+                >
+                    <i class="fa-solid fa-power-off mr-1.5"></i> लॉगआउट
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- ३. मुख्य ॲडमिन डॅशबोर्ड कन्टेन्ट -->
+    <main class="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
+        
+        <!-- डॅशबोर्ड वरील ५ मुख्य आकडे (Stats Counter Cards) -->
+        <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
+            <!-- १. एकूण विद्यार्थी -->
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
+                <div class="flex items-center justify-between text-slate-400 mb-2">
+                    <span class="text-xs font-bold uppercase tracking-wider text-slate-500">एकूण विद्यार्थी</span>
+                    <i class="fa-solid fa-users text-blue-600 text-lg"></i>
+                </div>
+                <div id="statTotalStudents" class="text-2xl sm:text-3xl font-extrabold text-slate-900">--</div>
+                <div class="text-[11px] text-slate-500 mt-1 font-medium">नोंदणी झालेले सर्व उमेदवार</div>
+            </div>
+
+            <!-- २. मंजुरी प्रलंबित (सर्वात महत्त्वाचे) -->
+            <div class="bg-white p-5 rounded-2xl shadow-sm border-2 border-amber-300 bg-amber-50/30">
+                <div class="flex items-center justify-between text-amber-600 mb-2">
+                    <span class="text-xs font-bold uppercase tracking-wider text-amber-800">मंजुरी प्रलंबित</span>
+                    <i class="fa-solid fa-clock-rotate-left text-amber-600 text-lg animate-spin" style="animation-duration: 8s;"></i>
+                </div>
+                <div id="statPendingStudents" class="text-2xl sm:text-3xl font-extrabold text-amber-600">--</div>
+                <div class="text-[11px] text-amber-700 mt-1 font-bold">मंजुरीची वाट पाहणारे</div>
+            </div>
+
+            <!-- ३. मंजूर विद्यार्थी -->
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
+                <div class="flex items-center justify-between text-slate-400 mb-2">
+                    <span class="text-xs font-bold uppercase tracking-wider text-slate-500">सक्रिय विद्यार्थी</span>
+                    <i class="fa-solid fa-user-check text-emerald-600 text-lg"></i>
+                </div>
+                <div id="statApprovedStudents" class="text-2xl sm:text-3xl font-extrabold text-emerald-600">--</div>
+                <div class="text-[11px] text-slate-500 mt-1 font-medium">मंजूर केलेले अकाउंट्स</div>
+            </div>
+
+            <!-- ४. एकूण पेपर्स -->
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
+                <div class="flex items-center justify-between text-slate-400 mb-2">
+                    <span class="text-xs font-bold uppercase tracking-wider text-slate-500">एकूण पेपर्स</span>
+                    <i class="fa-solid fa-file-lines text-purple-600 text-lg"></i>
+                </div>
+                <div id="statTotalPapers" class="text-2xl sm:text-3xl font-extrabold text-slate-900">२</div>
+                <div class="text-[11px] text-slate-500 mt-1 font-medium">पोर्टलवरील सराव संच</div>
+            </div>
+
+            <!-- ५. सोडवलेले पेपर्स -->
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 col-span-2 md:col-span-1">
+                <div class="flex items-center justify-between text-slate-400 mb-2">
+                    <span class="text-xs font-bold uppercase tracking-wider text-slate-500">सोडवलेले पेपर्स</span>
+                    <i class="fa-solid fa-award text-amber-500 text-lg"></i>
+                </div>
+                <div id="statTotalAttempts" class="text-2xl sm:text-3xl font-extrabold text-slate-900">--</div>
+                <div class="text-[11px] text-slate-500 mt-1 font-medium">विद्यार्थ्यांचे निकाल</div>
+            </div>
+        </div>
+
+        <!-- ४. विद्यार्थी व मंजुरी विभाग (Student Approval & Management Section) -->
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+            
+            <!-- सेक्शन हेडर व फिल्टर्स -->
+            <div class="p-5 sm:p-6 border-b border-slate-200 bg-slate-50 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                    <h3 class="text-lg font-extrabold text-slate-900 flex items-center">
+                        <i class="fa-solid fa-id-card text-amber-500 mr-2"></i>
+                        विद्यार्थी नोंदणी व मंजुरी कक्ष
+                    </h3>
+                    <p class="text-xs text-slate-500 mt-0.5">
+                        नवीन आलेल्या विद्यार्थ्यांची पडताळणी करून त्यांना Approve (मंजूर) करा, अनोळखी असल्यास Reject करा.
+                    </p>
+                </div>
+
+                <div class="flex items-center gap-2">
+                    <!-- रिफ्रेश बटण -->
+                    <button 
+                        onclick="loadStudentsList()" 
+                        class="px-3 py-2 text-xs font-bold rounded-xl bg-white border border-slate-300 text-slate-700 hover:bg-slate-100 transition flex items-center shadow-sm"
+                        title="डेटा रीलोड करा"
+                    >
+                        <i class="fa-solid fa-rotate-right mr-1.5 text-blue-600" id="refreshIcon"></i> रिफ्रेश
+                    </button>
+                </div>
+            </div>
+
+            <!-- शोध व स्टेटस फिल्टर बार -->
+            <div class="p-4 border-b border-slate-200 bg-white flex flex-col sm:flex-row items-center justify-between gap-3">
+                <!-- सर्च बॉक्स -->
+                <div class="relative w-full sm:w-80">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-3 text-slate-400 text-xs"></i>
+                    <input 
+                        type="text" 
+                        id="studentSearch" 
+                        placeholder="नाव, मोबाईल किंवा ईमेलने शोधा..." 
+                        oninput="filterStudentsTable()"
+                        class="w-full pl-9 pr-4 py-2 text-xs rounded-xl border border-slate-300 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-amber-500 outline-none transition"
+                    >
+                </div>
+
+                <!-- स्टेटस फिल्टर्स टॅब -->
+                <div class="flex items-center space-x-1.5 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0 text-xs font-bold">
+                    <button onclick="setFilter('all')" id="tab_all" class="filter-tab px-3 py-1.5 rounded-lg bg-slate-900 text-white">सर्व</button>
+                    <button onclick="setFilter('pending')" id="tab_pending" class="filter-tab px-3 py-1.5 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200">
+                        प्रलंबित (<span id="filterCountPending">0</span>)
+                    </button>
+                    <button onclick="setFilter('approved')" id="tab_approved" class="filter-tab px-3 py-1.5 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200">मंजूर</button>
+                    <button onclick="setFilter('rejected')" id="tab_rejected" class="filter-tab px-3 py-1.5 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200">रद्द</button>
+                    <button onclick="setFilter('deactivated')" id="tab_deactivated" class="filter-tab px-3 py-1.5 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200">बंद</button>
+                </div>
+            </div>
+
+            <!-- विद्यार्थ्यांची मुख्य टेबल (Table) -->
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse text-xs">
+                    <thead>
+                        <tr class="bg-slate-100/70 border-b border-slate-200 text-slate-600 font-bold uppercase tracking-wider text-[11px]">
+                            <th class="py-3 px-4">#</th>
+                            <th class="py-3 px-4">विद्यार्थी नाव</th>
+                            <th class="py-3 px-4">मोबाईल व ईमेल</th>
+                            <th class="py-3 px-4">भरती संवर्ग</th>
+                            <th class="py-3 px-4">नोंदणी तारीख</th>
+                            <th class="py-3 px-4">सद्यस्थिती</th>
+                            <th class="py-3 px-4 text-center">कृती (Action)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="studentsTableBody" class="divide-y divide-slate-100">
+                        <tr>
+                            <td colspan="7" class="py-12 text-center text-slate-400">
+                                <i class="fa-solid fa-spinner fa-spin text-2xl mb-2 text-amber-500"></i>
+                                <div>विद्यार्थ्यांची माहिती लोड होत आहे...</div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- रिक्त टेबल संदेश (जर कोणी सापडला नाही तर) -->
+            <div id="noStudentsMsg" class="hidden py-12 text-center text-slate-400">
+                <i class="fa-solid fa-user-slash text-3xl mb-2 text-slate-300"></i>
+                <div class="font-bold text-sm text-slate-600">एकही विद्यार्थी सापडला नाही</div>
+                <p class="text-xs text-slate-400 mt-0.5">निवडलेल्या फिल्टरनुसार कोणतेही रेकॉर्ड उपलब्ध नाही.</p>
+            </div>
+        </div>
+    </main>
+
+    <!-- ५. सामान्य फूटर -->
+    <footer class="bg-slate-900 text-slate-400 text-xs py-4 text-center border-t border-slate-800">
+        महाराष्ट्र पोलीस भरती सराव परीक्षा पोर्टल &copy; २०२५-२०२६.
+    </footer>
+
+    <!-- Supabase CDN आणि कॉन्फिगरेशन स्क्रिप्ट -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase-config.js"></script>
+
+    <!-- ६. ॲडमिन पॅनेल लॉजिक स्क्रिप्ट -->
+    <script>
+        let allStudents = [];
+        let currentFilter = 'all';
+
+        // ॲडमिन नाव दाखवणे
+        const adminUser = JSON.parse(localStorage.getItem('pyq_user') || '{}');
+        if (adminUser.full_name) {
+            document.getElementById('adminName').textContent = adminUser.full_name;
+        }
+
+        // Supabase क्लायंट मिळवणे
+        function getSupabaseClient() {
+            if (window.supabaseClient && typeof window.supabaseClient.from === 'function') {
+                return window.supabaseClient;
+            }
+            const url = localStorage.getItem('pyq_supabase_url') || (typeof DEFAULT_SUPABASE_URL !== 'undefined' ? DEFAULT_SUPABASE_URL : '');
+            const key = localStorage.getItem('pyq_supabase_anon_key') || (typeof DEFAULT_SUPABASE_ANON_KEY !== 'undefined' ? DEFAULT_SUPABASE_ANON_KEY : '');
+            if (window.supabase && typeof window.supabase.createClient === 'function' && url && !url.includes("your-project-id")) {
+                window.supabaseClient = window.supabase.createClient(url, key);
+                return window.supabaseClient;
+            }
+            return null;
+        }
+
+        // १. सर्व विद्यार्थी Supabase मधून लोड करणे
+        async function loadStudentsList() {
+            const refreshIcon = document.getElementById('refreshIcon');
+            refreshIcon.classList.add('fa-spin');
+
+            const client = getSupabaseClient();
+            if (!client) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Supabase जोडलेले नाही',
+                    text: 'कृपया supabase-config.js मध्ये योग्य माहिती तपासा.',
+                    confirmButtonColor: '#dc2626'
+                });
+                refreshIcon.classList.remove('fa-spin');
+                return;
+            }
+
+            try {
+                const { data, error } = await client
+                    .from('students')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+
+                if (error) throw error;
+
+                allStudents = data || [];
+                updateStats();
+                filterStudentsTable();
+
+            } catch (err) {
+                console.error("विद्यार्थी लोड त्रुटी:", err);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'डेटा लोड त्रुटी',
+                    text: (err && err.message) ? err.message : 'माहिती लोड करताना अडचण आली.',
+                    confirmButtonColor: '#dc2626'
+                });
+            } finally {
+                refreshIcon.classList.remove('fa-spin');
+            }
+        }
+
+        // २. वरचे आकडे (Stats) अपडेट करणे
+        function updateStats() {
+            const studentsOnly = allStudents.filter(s => s.role !== 'admin');
+            const total = studentsOnly.length;
+            const pending = studentsOnly.filter(s => s.status === 'pending' || !s.is_approved).length;
+            const approved = studentsOnly.filter(s => s.status === 'approved' && s.is_approved).length;
+
+            document.getElementById('statTotalStudents').textContent = total;
+            document.getElementById('statPendingStudents').textContent = pending;
+            document.getElementById('statApprovedStudents').textContent = approved;
+            document.getElementById('filterCountPending').textContent = pending;
+        }
+
+        // ३. स्टेटस फिल्टर सेट करणे
+        function setFilter(filter) {
+            currentFilter = filter;
+            document.querySelectorAll('.filter-tab').forEach(tab => {
+                tab.className = 'filter-tab px-3 py-1.5 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200';
+            });
+            const activeTab = document.getElementById('tab_' + filter);
+            if (activeTab) {
+                activeTab.className = 'filter-tab px-3 py-1.5 rounded-lg bg-slate-900 text-white font-bold';
+            }
+            filterStudentsTable();
+        }
+
+        // ४. टेबल रेंडर व सर्च फिल्टर
+        function filterStudentsTable() {
+            const searchTerm = document.getElementById('studentSearch').value.trim().toLowerCase();
+            const tbody = document.getElementById('studentsTableBody');
+            const noMsg = document.getElementById('noStudentsMsg');
+
+            let list = allStudents.filter(s => s.role !== 'admin');
+
+            if (currentFilter === 'pending') {
+                list = list.filter(s => s.status === 'pending' || !s.is_approved);
+            } else if (currentFilter === 'approved') {
+                list = list.filter(s => s.status === 'approved' && s.is_approved);
+            } else if (currentFilter === 'rejected') {
+                list = list.filter(s => s.status === 'rejected');
+            } else if (currentFilter === 'deactivated') {
+                list = list.filter(s => s.status === 'deactivated');
+            }
+
+            if (searchTerm) {
+                list = list.filter(s => 
+                    (s.full_name && s.full_name.toLowerCase().includes(searchTerm)) ||
+                    (s.mobile && s.mobile.includes(searchTerm)) ||
+                    (s.email && s.email.toLowerCase().includes(searchTerm)) ||
+                    (s.bharti_type && s.bharti_type.toLowerCase().includes(searchTerm))
+                );
+            }
+
+            if (list.length === 0) {
+                tbody.innerHTML = '';
+                noMsg.classList.remove('hidden');
+                return;
+            }
+
+            noMsg.classList.add('hidden');
+            let html = '';
+
+            list.forEach((st, idx) => {
+                const dateStr = st.created_at ? new Date(st.created_at).toLocaleDateString('mr-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '--';
+
+                let statusBadge = '';
+                if (st.status === 'approved' && st.is_approved) {
+                    statusBadge = '<span class="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800"><i class="fa-solid fa-circle-check mr-1"></i> मंजूर</span>';
+                } else if (st.status === 'rejected') {
+                    statusBadge = '<span class="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800"><i class="fa-solid fa-circle-xmark mr-1"></i> रद्द</span>';
+                } else if (st.status === 'deactivated') {
+                    statusBadge = '<span class="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800"><i class="fa-solid fa-ban mr-1"></i> बंद</span>';
+                } else {
+                    statusBadge = '<span class="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 animate-pulse"><i class="fa-solid fa-clock mr-1"></i> प्रलंबित</span>';
+                }
+
+                let actionBtns = '';
+                if (st.status === 'pending' || !st.is_approved) {
+                    actionBtns = `
+                        <div class="flex items-center justify-center space-x-1.5">
+                            <button onclick="updateStudentStatus('${st.id}', 'approved')" class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg font-bold text-[11px] transition shadow-sm flex items-center">
+                                <i class="fa-solid fa-check mr-1"></i> Approve
+                            </button>
+                            <button onclick="updateStudentStatus('${st.id}', 'rejected')" class="px-2.5 py-1 bg-rose-600 hover:bg-rose-500 text-white rounded-lg font-bold text-[11px] transition shadow-sm flex items-center">
+                                <i class="fa-solid fa-xmark mr-1"></i> Reject
+                            </button>
+                        </div>
+                    `;
+                } else if (st.status === 'approved') {
+                    actionBtns = `
+                        <div class="flex items-center justify-center space-x-1.5">
+                            <button onclick="updateStudentStatus('${st.id}', 'deactivated')" class="px-2.5 py-1 bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-lg font-bold text-[11px] transition shadow-sm flex items-center">
+                                <i class="fa-solid fa-pause mr-1"></i> बंद करा (Deactivate)
+                            </button>
+                            <button onclick="deleteStudent('${st.id}', '${st.full_name}')" class="p-1 text-slate-400 hover:text-rose-600 transition" title="हटवा">
+                                <i class="fa-solid fa-trash-can"></i>
+                            </button>
+                        </div>
+                    `;
+                } else if (st.status === 'deactivated') {
+                    actionBtns = `
+                        <div class="flex items-center justify-center space-x-1.5">
+                            <button onclick="updateStudentStatus('${st.id}', 'approved')" class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg font-bold text-[11px] transition shadow-sm flex items-center">
+                                <i class="fa-solid fa-play mr-1"></i> पुन्हा सुरू करा
+                            </button>
+                            <button onclick="deleteStudent('${st.id}', '${st.full_name}')" class="p-1 text-slate-400 hover:text-rose-600 transition" title="हटवा">
+                                <i class="fa-solid fa-trash-can"></i>
+                            </button>
+                        </div>
+                    `;
+                } else {
+                    actionBtns = `
+                        <div class="flex items-center justify-center space-x-1.5">
+                            <button onclick="updateStudentStatus('${st.id}', 'approved')" class="px-2.5 py-1 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-bold text-[11px] transition shadow-sm flex items-center">
+                                <i class="fa-solid fa-rotate-left mr-1"></i> मंजूर करा
+                            </button>
+                            <button onclick="deleteStudent('${st.id}', '${st.full_name}')" class="p-1 text-slate-400 hover:text-rose-600 transition" title="हटवा">
+                                <i class="fa-solid fa-trash-can"></i>
+                            </button>
+                        </div>
+                    `;
+                }
+
+                html += `
+                    <tr class="hover:bg-slate-50/80 transition">
+                        <td class="py-3 px-4 font-bold text-slate-400">${idx + 1}</td>
+                        <td class="py-3 px-4">
+                            <div class="font-extrabold text-slate-900 text-sm">${st.full_name}</div>
+                            <div class="text-[10px] text-slate-400">ID: ${st.id.substring(0, 8)}...</div>
+                        </td>
+                        <td class="py-3 px-4">
+                            <div class="font-bold text-slate-800"><i class="fa-solid fa-phone text-slate-400 mr-1"></i>${st.mobile}</div>
+                            <div class="text-slate-500 text-[11px]"><i class="fa-solid fa-envelope text-slate-400 mr-1"></i>${st.email}</div>
+                        </td>
+                        <td class="py-3 px-4">
+                            <span class="px-2 py-0.5 rounded bg-slate-100 border border-slate-200 text-slate-700 font-semibold text-[11px]">
+                                ${st.bharti_type || 'पोलीस भरती'}
+                            </span>
+                        </td>
+                        <td class="py-3 px-4 text-slate-500 font-medium">${dateStr}</td>
+                        <td class="py-3 px-4">${statusBadge}</td>
+                        <td class="py-3 px-4 text-center">${actionBtns}</td>
+                    </tr>
+                `;
+            });
+
+            tbody.innerHTML = html;
+        }
+
+        // ५. विद्यार्थ्याची स्थिती अपडेट करणे (Approve / Reject / Deactivate)
+        async function updateStudentStatus(studentId, newStatus) {
+            const client = getSupabaseClient();
+            if (!client) return;
+
+            const isApproved = (newStatus === 'approved');
+            let actionText = '';
+            if (newStatus === 'approved') actionText = 'मंजूर (Approve)';
+            else if (newStatus === 'rejected') actionText = 'रद्द (Reject)';
+            else if (newStatus === 'deactivated') actionText = 'बंद (Deactivate)';
+
+            try {
+                const { error } = await client
+                    .from('students')
+                    .update({ 
+                        status: newStatus, 
+                        is_approved: isApproved, 
+                        updated_at: new Date().toISOString() 
+                    })
+                    .eq('id', studentId);
+
+                if (error) throw error;
+
+                const target = allStudents.find(s => s.id === studentId);
+                if (target) {
+                    target.status = newStatus;
+                    target.is_approved = isApproved;
+                }
+
+                updateStats();
+                filterStudentsTable();
+
+                const toast = Swal.mixin({
+                    toast: true,
+                    position: 'top-end',
+                    showConfirmButton: false,
+                    timer: 2000,
+                    timerProgressBar: true
+                });
+                toast.fire({
+                    icon: 'success',
+                    title: `विद्यार्थी खाते ${actionText} केले!`
+                });
+
+            } catch (err) {
+                console.error("स्थिती बदल त्रुटी:", err);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'त्रुटी',
+                    text: (err && err.message) ? err.message : 'बदल करताना अडचण आली.',
+                    confirmButtonColor: '#dc2626'
+                });
+            }
+        }
+
+        // ६. विद्यार्थी कायमचा हटवणे (Delete)
+        async function deleteStudent(studentId, name) {
+            const result = await Swal.fire({
+                title: 'विद्यार्थी हटवायचा आहे का?',
+                text: `${name} चे खाते आणि सर्व डेटा कायमचा काढून टाकला जाईल.`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#dc2626',
+                cancelButtonColor: '#64748b',
+                confirmButtonText: 'होय, हटवा',
+                cancelButtonText: 'रद्द करा'
+            });
+
+            if (!result.isConfirmed) return;
+
+            const client = getSupabaseClient();
+            if (!client) return;
+
+            try {
+                const { error } = await client.from('students').delete().eq('id', studentId);
+                if (error) throw error;
+
+                allStudents = allStudents.filter(s => s.id !== studentId);
+                updateStats();
+                filterStudentsTable();
+
+                Swal.fire({
+                    icon: 'success',
+                    title: 'हटवले!',
+                    text: 'विद्यार्थी खाते यशस्वीरित्या हटवले गेले.',
+                    timer: 1500,
+                    showConfirmButton: false
+                });
+
+            } catch (err) {
+                console.error("हटवताना त्रुटी:", err);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'त्रुटी',
+                    text: (err && err.message) ? err.message : 'विद्यार्थी हटवता आला नाही.',
+                    confirmButtonColor: '#dc2626'
+                });
+            }
+        }
+
+        // ७. ॲडमिन लॉगआउट
+        function adminLogout() {
+            Swal.fire({
+                title: 'लॉगआउट करायचे आहे का?',
+                text: 'तुम्ही ॲडमिन पॅनेलमधून बाहेर पडाल.',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#d97706',
+                cancelButtonColor: '#64748b',
+                confirmButtonText: 'होय, लॉगआउट करा',
+                cancelButtonText: 'रद्द करा'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    localStorage.removeItem('pyq_user');
+                    window.location.href = 'login.html';
+                }
+            });
+        }
+
+        // पेज लोड झाल्यावर डेटा लोड करणे
+        document.addEventListener('DOMContentLoaded', () => {
+            loadStudentsList();
+        });
+    </script>
+</body>
+</html>
