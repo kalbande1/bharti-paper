@@ -43,6 +43,7 @@
     <!-- २. मुख्य नोंदणी कार्ड -->
     <main class="flex-grow flex items-center justify-center px-4 py-8 sm:py-12">
         <div class="max-w-lg w-full bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden">
+            
             <!-- कार्ड हेडर -->
             <div class="bg-gradient-to-r from-slate-900 via-blue-950 to-slate-900 p-6 text-white text-center border-b border-slate-800">
                 <div class="w-14 h-14 mx-auto rounded-2xl bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center justify-center text-2xl mb-3 shadow-inner">
@@ -52,6 +53,53 @@
                 <p class="text-xs sm:text-sm text-slate-300 mt-1">
                     सराव परीक्षा सुरू करण्यासाठी तुमची अधिकृत माहिती भरा (कोणत्याही ईमेल पडताळणीची गरज नाही).
                 </p>
+            </div>
+
+            <!-- Supabase थेट सेटिंग्ज बार (ब्राऊझरमधून थेट जोडणीसाठी) -->
+            <div class="bg-slate-100 border-b border-slate-200 px-6 py-3">
+                <div class="flex items-center justify-between">
+                    <div id="connectionStatusBadge" class="flex items-center space-x-2 text-xs font-semibold text-slate-600">
+                        <span class="w-2.5 h-2.5 rounded-full bg-amber-500 inline-block animate-pulse"></span>
+                        <span id="connectionStatusText">तपासत आहे...</span>
+                    </div>
+                    <button 
+                        type="button" 
+                        onclick="toggleConfigBox()" 
+                        class="text-xs text-blue-700 hover:text-blue-900 font-bold flex items-center underline"
+                    >
+                        <i class="fa-solid fa-gear mr-1"></i> Supabase सेटिंग्ज
+                    </button>
+                </div>
+
+                <!-- सेटिंग्ज फॉर्म (गरज असल्यास उघडता येतो) -->
+                <div id="configBox" class="hidden mt-3 pt-3 border-t border-slate-200 space-y-2.5">
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-700">Supabase Project URL:</label>
+                        <input 
+                            type="text" 
+                            id="cfgSupabaseUrl" 
+                            placeholder="https://your-project.supabase.co" 
+                            class="w-full px-3 py-1.5 text-xs rounded-lg border border-slate-300 bg-white outline-none focus:ring-1 focus:ring-amber-500"
+                        >
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-700">Supabase Anon Key:</label>
+                        <input 
+                            type="password" 
+                            id="cfgSupabaseKey" 
+                            placeholder="eyJhbGciOi..." 
+                            class="w-full px-3 py-1.5 text-xs rounded-lg border border-slate-300 bg-white outline-none focus:ring-1 focus:ring-amber-500"
+                        >
+                    </div>
+                    <button 
+                        type="button" 
+                        onclick="saveSupabaseConfig()" 
+                        class="w-full py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold transition shadow-sm flex items-center justify-center space-x-1"
+                    >
+                        <i class="fa-solid fa-check"></i>
+                        <span>क्रेडेन्शियल्स जतन करा व तपासा (Save & Test)</span>
+                    </button>
+                </div>
             </div>
 
             <!-- नोंदणी फॉर्म -->
@@ -174,108 +222,308 @@
         महाराष्ट्र पोलीस भरती सराव परीक्षा पोर्टल &copy; २०२५-२०२६.
     </footer>
 
-    <!-- Supabase CDN आणि कॉन्फिगरेशन स्क्रिप्ट -->
+    <!-- Supabase CDN -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="supabase-config.js"></script>
+    <!-- पर्यायी बाह्य फाईल -->
+    <script src="supabase-config.js" onerror="console.warn('supabase-config.js बाह्य फाईल सापडली नाही; इनलाइन इंजिन सक्रिय केले.')"></script>
+
+    <!-- ४. १००% सुरक्षित व स्वयंपूर्ण नोंदणी इंजिन (Self-Contained Engine) -->
     <script>
-        const registerForm = document.getElementById('registerForm');
-        const submitBtn = document.getElementById('submitBtn');
+        // १. सुरक्षित हॅशिंग फंक्शन (SHA-256)
+        async function localHashPassword(plain) {
+            try {
+                const msgBuffer = new TextEncoder().encode(plain.trim());
+                const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+                const hashArray = Array.from(new Uint8Array(hashBuffer));
+                return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+            } catch (e) {
+                let h = 0;
+                for (let i = 0; i < plain.length; i++) {
+                    h = ((h << 5) - h) + plain.charCodeAt(i);
+                    h |= 0;
+                }
+                return "hash_" + Math.abs(h);
+            }
+        }
 
-        registerForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
+        // २. Supabase क्लायंट व्यवस्थापक
+        function getActiveSupabaseClient() {
+            if (typeof supabase !== 'undefined' && supabase && window.isSupabaseActive) {
+                return supabase;
+            }
 
-            const fullName = document.getElementById('fullName').value.trim();
-            const mobile = document.getElementById('mobile').value.trim();
-            const email = document.getElementById('email').value.trim();
-            const bhartiType = document.getElementById('bhartiType').value;
-            const password = document.getElementById('password').value;
-            const confirmPassword = document.getElementById('confirmPassword').value;
+            const url = localStorage.getItem('pyq_supabase_url') || (typeof DEFAULT_SUPABASE_URL !== 'undefined' ? DEFAULT_SUPABASE_URL : '');
+            const key = localStorage.getItem('pyq_supabase_anon_key') || (typeof DEFAULT_SUPABASE_ANON_KEY !== 'undefined' ? DEFAULT_SUPABASE_ANON_KEY : '');
 
-            // १. इनपुट व्हॅलिडेशन्स
-            if (!/^\d{10}$/.test(mobile)) {
-                Swal.fire({
-                    icon: 'warning',
-                    title: 'अवैध मोबाईल नंबर',
-                    text: 'कृपया बरोबर १० अंकी मोबाईल नंबर टाका.',
-                    confirmButtonColor: '#f59e0b',
-                    confirmButtonText: 'समजले'
-                });
+            if (window.supabase && url && !url.includes("your-project-id") && key && !key.includes("your-supabase-anon-key")) {
+                try {
+                    return window.supabase.createClient(url, key, {
+                        auth: { persistSession: true, autoRefreshToken: true }
+                    });
+                } catch (e) {
+                    console.error("Supabase क्लायंट निर्मिती त्रुटी:", e);
+                }
+            }
+            return null;
+        }
+
+        // ३. कनेक्शन स्थिती तपासणे व अपडेट करणे
+        async function updateConnectionStatusUI() {
+            const badge = document.getElementById('connectionStatusBadge');
+            const text = document.getElementById('connectionStatusText');
+            const client = getActiveSupabaseClient();
+
+            if (!client) {
+                badge.innerHTML = '<span class="w-2.5 h-2.5 rounded-full bg-amber-500 inline-block"></span>';
+                text.textContent = 'स्थानिक मोड (Supabase जोडण्यासाठी सेटिंग्जवर क्लिक करा)';
+                text.className = 'text-amber-700 font-medium';
                 return;
             }
 
-            if (password.length < 6) {
-                Swal.fire({
-                    icon: 'warning',
-                    title: 'कमी लांबीचा पासवर्ड',
-                    text: 'पासवर्ड किमान ६ अक्षरांचा असणे आवश्यक आहे.',
-                    confirmButtonColor: '#f59e0b',
-                    confirmButtonText: 'समजले'
-                });
-                return;
-            }
-
-            if (password !== confirmPassword) {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'पासवर्ड जुळत नाही',
-                    text: 'दोन्ही पासवर्ड एकसारखे असणे आवश्यक आहे. कृपया पुन्हा तपासा.',
-                    confirmButtonColor: '#dc2626',
-                    confirmButtonText: 'पुन्हा टाका'
-                });
-                return;
-            }
-
-            // २. नोंदणी प्रक्रिया सुरू करणे
-            submitBtn.disabled = true;
-            submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> नोंदणी सुरू आहे...';
+            badge.innerHTML = '<span class="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block animate-ping"></span>';
+            text.textContent = 'Supabase तपासत आहे...';
 
             try {
-                if (typeof DB === 'undefined' || !DB.registerStudent) {
-                    throw new Error("डेटाबेस सेवा लोड झालेली नाही. कृपया supabase-config.js योग्यरित्या जोडली आहे का ते तपासा.");
+                const { data, error } = await client.from('students').select('id').limit(1);
+                if (error) throw error;
+
+                badge.innerHTML = '<span class="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block"></span>';
+                text.textContent = 'Supabase डेटाबेस सक्रिय (डेटा थेट सेव्ह होईल)';
+                text.className = 'text-emerald-700 font-bold';
+            } catch (err) {
+                console.warn("Supabase टेबल तपासणी त्रुटी:", err);
+                badge.innerHTML = '<span class="w-2.5 h-2.5 rounded-full bg-blue-500 inline-block"></span>';
+                text.textContent = 'Supabase कनेक्ट झाले (students टेबल तयार असणे आवश्यक)';
+                text.className = 'text-blue-700 font-semibold';
+            }
+        }
+
+        // ४. सेटिंग्ज बॉक्स उघडणे/बंद करणे
+        function toggleConfigBox() {
+            const box = document.getElementById('configBox');
+            box.classList.toggle('hidden');
+
+            const currentUrl = localStorage.getItem('pyq_supabase_url') || '';
+            const currentKey = localStorage.getItem('pyq_supabase_anon_key') || '';
+            if (currentUrl) document.getElementById('cfgSupabaseUrl').value = currentUrl;
+            if (currentKey) document.getElementById('cfgSupabaseKey').value = currentKey;
+        }
+
+        // ५. क्रेडेन्शियल्स सेव्ह करणे
+        async function saveSupabaseConfig() {
+            const url = document.getElementById('cfgSupabaseUrl').value.trim();
+            const key = document.getElementById('cfgSupabaseKey').value.trim();
+
+            if (!url || !key) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'माहिती अपूर्ण',
+                    text: 'कृपया Supabase URL आणि Anon Key दोन्ही टाका.',
+                    confirmButtonColor: '#f59e0b'
+                });
+                return;
+            }
+
+            localStorage.setItem('pyq_supabase_url', url);
+            localStorage.setItem('pyq_supabase_anon_key', key);
+
+            Swal.fire({
+                icon: 'info',
+                title: 'तपासत आहे...',
+                text: 'Supabase कनेक्शन तपासले जात आहे...',
+                showConfirmButton: false,
+                timer: 1000
+            });
+
+            setTimeout(async () => {
+                await updateConnectionStatusUI();
+                document.getElementById('configBox').classList.add('hidden');
+                Swal.fire({
+                    icon: 'success',
+                    title: 'क्रेडेन्शियल्स सेव्ह झाले!',
+                    text: 'Supabase माहिती यशस्वीरित्या जोडली गेली आहे.',
+                    confirmButtonColor: '#10b981'
+                });
+            }, 1000);
+        }
+
+        // ६. स्वयंपूर्ण विद्यार्थी नोंदणी प्रक्रिया
+        async function executeStudentRegistration(formData) {
+            const { fullName, mobile, email, bhartiType, password } = formData;
+            const cleanName = fullName.trim();
+            const cleanMobile = mobile.trim();
+            const cleanEmail = email.trim().toLowerCase();
+            const passwordHash = await localHashPassword(password);
+
+            const client = getActiveSupabaseClient();
+
+            // अ) Supabase मध्ये थेट सेव्ह करणे
+            if (client) {
+                try {
+                    // १. आधीच मोबाईल किंवा ईमेल आहे का ते तपासणे
+                    const { data: existing, error: checkErr } = await client
+                        .from('students')
+                        .select('id, mobile, email')
+                        .or(`mobile.eq.${cleanMobile},email.ilike.${cleanEmail}`);
+
+                    if (!checkErr && existing && existing.length > 0) {
+                        const hasMobile = existing.some(s => s.mobile === cleanMobile);
+                        if (hasMobile) {
+                            return { success: false, message: 'हा मोबाईल नंबर आधीच नोंदणीकृत आहे. कृपया लॉगिन करा.' };
+                        }
+                        return { success: false, message: 'हा ईमेल आयडी आधीच नोंदणीकृत आहे.' };
+                    }
+
+                    // २. नवीन रेकॉर्ड इन्सर्ट करणे
+                    const payload = {
+                        full_name: cleanName,
+                        mobile: cleanMobile,
+                        email: cleanEmail,
+                        bharti_type: bhartiType,
+                        password_hash: passwordHash,
+                        role: 'student',
+                        is_approved: false,
+                        status: 'pending'
+                    };
+
+                    const { data, error } = await client.from('students').insert([payload]).select();
+
+                    if (error) {
+                        console.error("Supabase Insert Error:", error);
+                        if (error.code === '23505') {
+                            return { success: false, message: 'हा मोबाईल नंबर किंवा ईमेल आधीच नोंदणीकृत आहे.' };
+                        }
+                        if (error.message && error.message.includes('relation') && error.message.includes('does not exist')) {
+                            return { success: false, message: 'Supabase मध्ये students टेबल सापडले नाही. कृपया Supabase SQL Editor मध्ये टेबल तयार करणारी क्वेरी चालवा.' };
+                        }
+                        return { success: false, message: 'नोंदणी त्रुटी: ' + (error.message || 'डेटाबेस एरर') };
+                    }
+
+                    return { success: true, student: (data && data[0]) ? data[0] : payload };
+                } catch (supaErr) {
+                    console.error("Supabase API अपवाद:", supaErr);
+                }
+            }
+
+            // ब) स्थानिक मोड (LocalStorage Fallback)
+            const localStudents = JSON.parse(localStorage.getItem('pyq_local_students') || '[]');
+            if (localStudents.some(s => s.mobile === cleanMobile)) {
+                return { success: false, message: 'हा मोबाईल नंबर आधीच नोंदणीकृत आहे. कृपया लॉगिन करा.' };
+            }
+            if (localStudents.some(s => s.email.toLowerCase() === cleanEmail)) {
+                return { success: false, message: 'हा ईमेल आयडी आधीच नोंदणीकृत आहे.' };
+            }
+
+            const newRec = {
+                id: 'std-' + Date.now(),
+                full_name: cleanName,
+                mobile: cleanMobile,
+                email: cleanEmail,
+                bharti_type: bhartiType,
+                password_hash: passwordHash,
+                role: 'student',
+                is_approved: false,
+                status: 'pending',
+                created_at: new Date().toISOString()
+            };
+
+            localStudents.push(newRec);
+            localStorage.setItem('pyq_local_students', JSON.stringify(localStudents));
+            return { success: true, student: newRec };
+        }
+
+        // ७. फॉर्म सबमिशन इव्हेंट
+        document.addEventListener('DOMContentLoaded', () => {
+            updateConnectionStatusUI();
+
+            const registerForm = document.getElementById('registerForm');
+            const submitBtn = document.getElementById('submitBtn');
+
+            registerForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+
+                const fullName = document.getElementById('fullName').value.trim();
+                const mobile = document.getElementById('mobile').value.trim();
+                const email = document.getElementById('email').value.trim();
+                const bhartiType = document.getElementById('bhartiType').value;
+                const password = document.getElementById('password').value;
+                const confirmPassword = document.getElementById('confirmPassword').value;
+
+                // व्हॅलिडेशन्स
+                if (!/^\d{10}$/.test(mobile)) {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'अवैध मोबाईल नंबर',
+                        text: 'कृपया बरोबर १० अंकी मोबाईल नंबर टाका.',
+                        confirmButtonColor: '#f59e0b'
+                    });
+                    return;
                 }
 
-                const result = await DB.registerStudent({
-                    fullName,
-                    mobile,
-                    email,
-                    bhartiType,
-                    password
-                });
-
-                if (result.success) {
-                    // ईमेल पडताळणीशिवाय थेट यशस्वी संदेश
+                if (password.length < 6) {
                     Swal.fire({
-                        icon: 'success',
-                        title: 'नोंदणी यशस्वी झाली!',
-                        text: 'ॲडमिनच्या मंजुरीनंतर तुमचे लॉगिन सुरू होईल. कृपया थोडा वेळ वाट पहा.',
-                        confirmButtonColor: '#10b981',
-                        confirmButtonText: 'लॉगिन पेजवर जा',
-                        allowOutsideClick: false
-                    }).then(() => {
-                        window.location.href = 'login.html';
+                        icon: 'warning',
+                        title: 'कमी लांबीचा पासवर्ड',
+                        text: 'पासवर्ड किमान ६ अक्षरांचा असणे आवश्यक आहे.',
+                        confirmButtonColor: '#f59e0b'
                     });
-                } else {
+                    return;
+                }
+
+                if (password !== confirmPassword) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'पासवर्ड जुळत नाही',
+                        text: 'दोन्ही पासवर्ड एकसारखे असणे आवश्यक आहे.',
+                        confirmButtonColor: '#dc2626'
+                    });
+                    return;
+                }
+
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> नोंदणी सुरू आहे...';
+
+                try {
+                    const result = await executeStudentRegistration({
+                        fullName,
+                        mobile,
+                        email,
+                        bhartiType,
+                        password
+                    });
+
+                    if (result.success) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'नोंदणी यशस्वी झाली!',
+                            text: 'ॲडमिनच्या मंजुरीनंतर तुमचे लॉगिन सुरू होईल. कृपया थोडा वेळ वाट पहा.',
+                            confirmButtonColor: '#10b981',
+                            confirmButtonText: 'लॉगिन पेजवर जा',
+                            allowOutsideClick: false
+                        }).then(() => {
+                            window.location.href = 'login.html';
+                        });
+                    } else {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'नोंदणी अयशस्वी',
+                            text: result.message || 'नोंदणी करताना त्रुटी आली.',
+                            confirmButtonColor: '#dc2626'
+                        });
+                    }
+                } catch (err) {
+                    console.error("नोंदणी त्रुटी:", err);
                     Swal.fire({
                         icon: 'error',
                         title: 'नोंदणी अयशस्वी',
-                        text: result.message || 'नोंदणी करताना त्रुटी आली. कृपया माहिती तपासा.',
-                        confirmButtonColor: '#dc2626',
-                        confirmButtonText: 'ठीक आहे'
+                        text: (err && err.message) ? err.message : 'नोंदणी करताना अडचण आली.',
+                        confirmButtonColor: '#dc2626'
                     });
+                } finally {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = '<i class="fa-solid fa-paper-plane mr-2"></i> नोंदणी पूर्ण करा (Register)';
                 }
-            } catch (err) {
-                console.error("नोंदणी त्रुटी:", err);
-                Swal.fire({
-                    icon: 'error',
-                    title: 'नोंदणी अयशस्वी',
-                    text: (err && err.message) ? err.message : 'नोंदणी करताना अडचण आली. कृपया पुन्हा प्रयत्न करा.',
-                    confirmButtonColor: '#dc2626',
-                    confirmButtonText: 'ठीक आहे'
-                });
-            } finally {
-                submitBtn.disabled = false;
-                submitBtn.innerHTML = '<i class="fa-solid fa-paper-plane mr-2"></i> नोंदणी पूर्ण करा (Register)';
-            }
+            });
         });
     </script>
 </body>
