@@ -1,0 +1,982 @@
+<!DOCTYPE html>
+<html lang="mr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>सराव परीक्षा कक्ष | महाराष्ट्र पोलीस भरती परीक्षा पोर्टल</title>
+    <!-- Google Fonts: Noto Sans Devanagari & Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+Devanagari:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome Icons CDN -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- SweetAlert2 CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <!-- सानुकूल स्टाइलशीट -->
+    <link rel="stylesheet" href="style.css">
+    <style>
+        body {
+            font-family: 'Noto Sans Devanagari', 'Inter', sans-serif;
+            background-color: #f8fafc;
+            user-select: none; /* कॉपी प्रतिबंध */
+        }
+        .palette-btn {
+            width: 36px;
+            height: 36px;
+            font-size: 12px;
+            font-weight: 700;
+            border-radius: 8px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.15s ease-in-out;
+            cursor: pointer;
+        }
+        /* पॅलेट स्थिती रंग (TCS/IBPS पॅटर्न) */
+        .pal-not-visited { background-color: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; }
+        .pal-not-answered { background-color: #ef4444; color: #ffffff; }
+        .pal-answered { background-color: #10b981; color: #ffffff; }
+        .pal-review { background-color: #8b5cf6; color: #ffffff; }
+        .pal-ans-review { background-color: #8b5cf6; color: #ffffff; position: relative; }
+        .pal-ans-review::after {
+            content: '';
+            position: absolute;
+            bottom: 2px;
+            right: 2px;
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background-color: #10b981;
+            border: 1px solid #ffffff;
+        }
+        .pal-current {
+            box-shadow: 0 0 0 3px #f59e0b;
+            font-weight: 900;
+            transform: scale(1.08);
+        }
+        .option-card:hover {
+            border-color: #f59e0b;
+            background-color: #fffbeb;
+        }
+        .option-selected {
+            border-color: #d97706 !important;
+            background-color: #fef3c7 !important;
+            box-shadow: 0 0 0 1px #d97706;
+        }
+    </style>
+</head>
+<body class="bg-slate-100 text-slate-800 min-h-screen flex flex-col justify-between overflow-x-hidden">
+
+    <!-- १. सुरक्षितता तपासणी (लॉगिन आहे का ते पाहणे) -->
+    <script>
+        const savedUser = localStorage.getItem('pyq_user');
+        let currentUser = null;
+        if (!savedUser) {
+            window.location.href = 'login.html';
+        } else {
+            try {
+                currentUser = JSON.parse(savedUser);
+            } catch(e) {
+                window.location.href = 'login.html';
+            }
+        }
+
+        // URL मधून paper_id मिळवणे
+        const urlParams = new URLSearchParams(window.location.search);
+        const paperId = urlParams.get('paper_id');
+        if (!paperId) {
+            alert('कोणताही पेपर निवडलेला नाही!');
+            window.location.href = 'dashboard.html';
+        }
+    </script>
+
+    <!-- २. परीक्षा मुख्य हेडर (TCS/IBPS पॅटर्न) -->
+    <header class="bg-slate-900 border-b border-slate-800 text-white sticky top-0 z-50 shadow-md">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 py-2.5 flex items-center justify-between">
+            
+            <!-- डावी बाजू: पेपर नाव व लोगो -->
+            <div class="flex items-center space-x-3">
+                <div class="w-9 h-9 rounded-full bg-amber-500 text-slate-950 flex items-center justify-center font-bold text-lg shadow border border-amber-300">
+                    <i class="fa-solid fa-shield-halved"></i>
+                </div>
+                <div>
+                    <h1 id="headerPaperTitle" class="font-extrabold text-sm sm:text-base leading-tight text-white line-clamp-1">
+                        सराव परीक्षा लोड होत आहे...
+                    </h1>
+                    <div class="text-[11px] text-amber-300 font-medium flex items-center gap-2">
+                        <span>महाराष्ट्र पोलीस भरती सराव कक्ष</span>
+                        <span class="text-slate-500">|</span>
+                        <span id="headerMarksTime">१०० गुण • ९० मिनिटे</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- उजवी बाजू: टाईमर व उमेदवार माहिती -->
+            <div class="flex items-center space-x-3 sm:space-x-4">
+                
+                <!-- डिजिटल काउंटडाउन टाईमर (Countdown Clock) -->
+                <div class="bg-slate-950 border border-slate-700 px-3.5 py-1.5 rounded-xl shadow-inner flex items-center space-x-2">
+                    <i class="fa-solid fa-stopwatch text-amber-400 text-sm animate-pulse"></i>
+                    <div>
+                        <div class="text-[9px] uppercase font-bold text-slate-400 leading-none">उर्वरित वेळ</div>
+                        <div id="countdownTimer" class="font-mono text-base sm:text-lg font-black text-amber-400 tracking-wider">
+                            --:--:--
+                        </div>
+                    </div>
+                </div>
+
+                <!-- उमेदवार प्रोफाईल बॅज -->
+                <div class="hidden sm:flex items-center space-x-2 border-l border-slate-800 pl-3">
+                    <div class="w-8 h-8 rounded-full bg-blue-700 text-white font-bold flex items-center justify-center text-xs">
+                        <i class="fa-solid fa-user"></i>
+                    </div>
+                    <div class="text-right">
+                        <div id="candidateName" class="text-xs font-bold text-slate-200">उमेदवार</div>
+                        <div id="candidateBharti" class="text-[10px] text-slate-400">पोलीस शिपाई</div>
+                    </div>
+                </div>
+
+                <!-- पूर्ण सबमिट बटण (हेडरमधील शॉर्टकट) -->
+                <button 
+                    onclick="promptSubmitExam()" 
+                    class="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-md transition flex items-center space-x-1"
+                >
+                    <i class="fa-solid fa-paper-plane mr-1"></i>
+                    <span class="hidden sm:inline">पेपर सबमिट</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- ३. विषय फिल्टर्स बार (Subject Navigation Tabs) -->
+    <div class="bg-white border-b border-slate-200 px-4 py-2 sticky top-[57px] z-40 shadow-sm">
+        <div class="max-w-7xl mx-auto flex items-center justify-between">
+            <div id="subjectTabsContainer" class="flex items-center space-x-2 overflow-x-auto text-xs font-bold py-1">
+                <button onclick="filterBySubject('all')" id="subTab_all" class="subject-tab px-3 py-1.5 rounded-lg bg-slate-900 text-white shadow-sm whitespace-nowrap">
+                    सर्व प्रश्न (<span id="totalQuestionsCount">0</span>)
+                </button>
+                <button onclick="filterBySubject('मराठी व्याकरण')" id="subTab_marathi" class="subject-tab px-3 py-1.5 rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 whitespace-nowrap">
+                    मराठी व्याकरण
+                </button>
+                <button onclick="filterBySubject('अंकगणित')" id="subTab_math" class="subject-tab px-3 py-1.5 rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 whitespace-nowrap">
+                    अंकगणित
+                </button>
+                <button onclick="filterBySubject('बुद्धिमत्ता चाचणी')" id="subTab_reasoning" class="subject-tab px-3 py-1.5 rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 whitespace-nowrap">
+                    बुद्धिमत्ता
+                </button>
+                <button onclick="filterBySubject('सामान्य ज्ञान व चालू घडामोडी')" id="subTab_gk" class="subject-tab px-3 py-1.5 rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 whitespace-nowrap">
+                    चालू घडामोडी व GK
+                </button>
+            </div>
+
+            <!-- मोबाईल पॅलेट टॉगल -->
+            <button 
+                onclick="togglePaletteDrawer()" 
+                class="lg:hidden ml-2 px-3 py-1.5 bg-amber-500 text-slate-950 font-bold text-xs rounded-lg flex items-center whitespace-nowrap shadow-sm"
+            >
+                <i class="fa-solid fa-table-cells-large mr-1.5"></i> पॅलेट (<span id="mobilePalAnsweredCount">0</span>)
+            </button>
+        </div>
+    </div>
+
+    <!-- ४. मुख्य परीक्षा क्षेत्र (Main Question & Palette Layout) -->
+    <main class="flex-grow max-w-7xl mx-auto px-4 sm:px-6 py-6 w-full flex flex-col lg:flex-row gap-6">
+        
+        <!-- ==================================================================== -->
+        <!-- डावा विभाग: मुख्य प्रश्न व पर्याय (Question View Area) -->
+        <!-- ==================================================================== -->
+        <div class="flex-grow bg-white rounded-2xl shadow-sm border border-slate-200 flex flex-col justify-between overflow-hidden">
+            
+            <!-- प्रश्न क्रमांक व विषय हेडर -->
+            <div class="p-5 border-b border-slate-100 bg-slate-50 flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <span id="currentQNumBadge" class="w-8 h-8 rounded-lg bg-slate-900 text-amber-400 font-extrabold text-sm flex items-center justify-center shadow-sm">
+                        १
+                    </span>
+                    <div>
+                        <span id="currentQSubjectBadge" class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-blue-100 text-blue-800 border border-blue-200">
+                            विषय
+                        </span>
+                    </div>
+                </div>
+
+                <div class="flex items-center space-x-2 text-xs font-semibold text-slate-500">
+                    <span class="text-emerald-600 font-bold"><i class="fa-solid fa-plus mr-0.5"></i>१.० गुण</span>
+                    <span>•</span>
+                    <span class="text-slate-400">निगेटिव्ह मार्किंग नाही</span>
+                </div>
+            </div>
+
+            <!-- प्रश्न व पर्यायांचे कंटेनर -->
+            <div class="p-6 sm:p-8 flex-grow">
+                <!-- प्रश्न मजकूर -->
+                <div id="questionText" class="text-base sm:text-lg font-bold text-slate-900 leading-relaxed mb-6">
+                    प्रश्न लोड होत आहे... कृपया वाट पहा.
+                </div>
+
+                <!-- प्रश्नाची आकृती / प्रतिमा (असल्यास) -->
+                <div id="questionImageContainer" class="hidden mb-6">
+                    <img id="questionImage" src="" alt="प्रश्न आकृती" class="max-h-72 rounded-xl border border-slate-200 shadow-sm mx-auto object-contain">
+                </div>
+
+                <!-- ४ पर्याय (Options A, B, C, D) -->
+                <div id="optionsContainer" class="space-y-3">
+                    <!-- JavaScript द्वारे ४ पर्याय भरले जातील -->
+                </div>
+            </div>
+
+            <!-- तळाची नेव्हिगेशन बटने (Action Footer) -->
+            <div class="p-4 sm:p-5 border-t border-slate-200 bg-slate-50 flex flex-wrap items-center justify-between gap-3">
+                <div class="flex items-center space-x-2">
+                    <button 
+                        type="button" 
+                        onclick="prevQuestion()" 
+                        id="btnPrevQuestion"
+                        class="px-4 py-2.5 rounded-xl border border-slate-300 bg-white hover:bg-slate-100 text-slate-700 font-bold text-xs transition flex items-center shadow-sm"
+                    >
+                        <i class="fa-solid fa-chevron-left mr-1.5"></i> मागे
+                    </button>
+                    <button 
+                        type="button" 
+                        onclick="clearResponse()" 
+                        class="px-3.5 py-2.5 rounded-xl border border-slate-300 bg-white hover:bg-rose-50 text-rose-600 font-bold text-xs transition flex items-center shadow-sm"
+                        title="निवडलेला पर्याय रद्द करा"
+                    >
+                        <i class="fa-solid fa-rotate-left mr-1.5"></i> पर्याय खोडा
+                    </button>
+                </div>
+
+                <div class="flex items-center space-x-2">
+                    <button 
+                        type="button" 
+                        onclick="markForReviewAndNext()" 
+                        class="px-4 py-2.5 rounded-xl bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 font-bold text-xs transition flex items-center shadow-sm"
+                    >
+                        <i class="fa-solid fa-bookmark mr-1.5"></i> पुनरावलोकन (Review & Next)
+                    </button>
+                    <button 
+                        type="button" 
+                        onclick="saveAndNext()" 
+                        id="btnSaveNext"
+                        class="px-6 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold text-xs transition flex items-center shadow-md"
+                    >
+                        <span>जतन करा आणि पुढे</span>
+                        <i class="fa-solid fa-chevron-right ml-1.5"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================================================================== -->
+        <!-- उजवा विभाग: TCS/IBPS प्रश्न पॅलेट (Question Palette Sidebar) -->
+        <!-- ==================================================================== -->
+        <aside id="paletteDrawer" class="w-full lg:w-80 bg-white rounded-2xl shadow-sm border border-slate-200 flex flex-col justify-between overflow-hidden">
+            
+            <!-- पॅलेट हेडर व उमेदवार कार्ड -->
+            <div class="p-4 border-b border-slate-200 bg-slate-50">
+                <div class="flex items-center justify-between mb-3">
+                    <h3 class="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center">
+                        <i class="fa-solid fa-table-cells-large text-amber-500 mr-1.5"></i> प्रश्न पॅलेट (Palette)
+                    </h3>
+                    <span id="paletteCountText" class="text-xs font-extrabold text-blue-700">0 / 0</span>
+                </div>
+
+                <!-- TCS/IBPS रंग मार्गदर्शिका (Color Legend) -->
+                <div class="grid grid-cols-2 gap-2 text-[11px] font-semibold text-slate-600 bg-white p-2.5 rounded-xl border border-slate-200">
+                    <div class="flex items-center space-x-1.5">
+                        <span class="w-4 h-4 rounded bg-emerald-500 text-white text-[9px] flex items-center justify-center font-bold">✓</span>
+                        <span>सोडवलेले (<b id="countAnswered" class="text-emerald-700">0</b>)</span>
+                    </div>
+                    <div class="flex items-center space-x-1.5">
+                        <span class="w-4 h-4 rounded bg-rose-500 text-white text-[9px] flex items-center justify-center font-bold">✗</span>
+                        <span>न सोडवलेले (<b id="countNotAnswered" class="text-rose-700">0</b>)</span>
+                    </div>
+                    <div class="flex items-center space-x-1.5">
+                        <span class="w-4 h-4 rounded bg-purple-600 text-white text-[9px] flex items-center justify-center font-bold">★</span>
+                        <span>पुनरावलोकन (<b id="countReview" class="text-purple-700">0</b>)</span>
+                    </div>
+                    <div class="flex items-center space-x-1.5">
+                        <span class="w-4 h-4 rounded bg-slate-200 border border-slate-300 text-slate-700 text-[9px] flex items-center justify-center font-bold">○</span>
+                        <span>न पाहिलेले (<b id="countNotVisited" class="text-slate-600">0</b>)</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- प्रश्न क्रमांक ग्रिड (Scrollable Question Grid) -->
+            <div class="p-4 flex-grow overflow-y-auto max-h-[380px] lg:max-h-[460px]">
+                <div id="paletteGrid" class="grid grid-cols-5 gap-2">
+                    <!-- JavaScript द्वारे बटणे भरली जातील -->
+                </div>
+            </div>
+
+            <!-- अंतिम सबमिट बटण -->
+            <div class="p-4 border-t border-slate-200 bg-slate-50">
+                <button 
+                    type="button" 
+                    onclick="promptSubmitExam()" 
+                    class="w-full py-3.5 rounded-xl font-extrabold text-white bg-emerald-600 hover:bg-emerald-500 shadow-md transition text-xs flex items-center justify-center space-x-2"
+                >
+                    <i class="fa-solid fa-flag-checkered text-sm"></i>
+                    <span>अंतिम परीक्षा सबमिट करा (Submit Exam)</span>
+                </button>
+            </div>
+        </aside>
+
+    </main>
+
+    <!-- ५. सामान्य फूटर -->
+    <footer class="bg-slate-900 text-slate-400 text-xs py-3 text-center border-t border-slate-800">
+        महाराष्ट्र पोलीस भरती सराव परीक्षा पोर्टल &copy; २०२५-२०२६. सर्व हक्क सुरक्षित.
+    </footer>
+
+    <!-- Supabase CDN आणि कॉन्फिगरेशन स्क्रिप्ट -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase-config.js"></script>
+
+    <!-- ६. परीक्षा मुख्य लॉजिक (Exam Controller Script) -->
+    <script>
+        let currentPaper = null;
+        let allQuestions = [];
+        let filteredQuestions = [];
+        let currentQuestionIndex = 0; // ० ते allQuestions.length - 1
+        let currentSubjectFilter = 'all';
+
+        // विद्यार्थ्यांची उत्तरे साठवणारे ऑब्जेक्ट
+        // स्वरूप: { [questionId]: { chosen_option: 'A'|'B'|'C'|'D'|null, status: 'answered'|'not_answered'|'review'|'ans_review'|'not_visited' } }
+        let userResponses = {};
+
+        // काउंटडाउन टाईमर व्हेरिएबल्स
+        let remainingSeconds = 90 * 60;
+        let timerInterval = null;
+        let examStartTime = null;
+
+        // उमेदवार नाव सेट करणे
+        if (currentUser) {
+            document.getElementById('candidateName').textContent = currentUser.full_name || 'उमेदवार';
+            document.getElementById('candidateBharti').textContent = currentUser.bharti_type || 'पोलीस शिपाई';
+        }
+
+        // Supabase क्लायंट मिळवणे
+        function getSupabaseClient() {
+            if (window.supabaseClient && typeof window.supabaseClient.from === 'function') {
+                return window.supabaseClient;
+            }
+            const url = localStorage.getItem('pyq_supabase_url') || (typeof DEFAULT_SUPABASE_URL !== 'undefined' ? DEFAULT_SUPABASE_URL : '');
+            const key = localStorage.getItem('pyq_supabase_anon_key') || (typeof DEFAULT_SUPABASE_ANON_KEY !== 'undefined' ? DEFAULT_SUPABASE_ANON_KEY : '');
+            if (window.supabase && typeof window.supabase.createClient === 'function' && url && !url.includes("your-project-id")) {
+                window.supabaseClient = window.supabase.createClient(url, key);
+                return window.supabaseClient;
+            }
+            return null;
+        }
+
+        // अ) परीक्षा डेटा लोड करणे (Paper & Questions Fetch)
+        async function loadExamData() {
+            const client = getSupabaseClient();
+            if (!client) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'डेटाबेस त्रुटी',
+                    text: 'डेटाबेस सेवा उपलब्ध नाही. कृपया supabase-config.js तपासा.'
+                });
+                return;
+            }
+
+            try {
+                // १. पेपर माहिती लोड करणे
+                const { data: paperData, error: pErr } = await client
+                    .from('papers')
+                    .select('*')
+                    .eq('id', paperId)
+                    .single();
+
+                if (pErr || !paperData) {
+                    throw new Error("हा पेपर सापडला नाही किंवा काढून टाकला गेला आहे.");
+                }
+                currentPaper = paperData;
+
+                document.getElementById('headerPaperTitle').textContent = paperData.title;
+                document.getElementById('headerMarksTime').textContent = `${paperData.total_marks || 100} गुण • ${paperData.time_minutes || 90} मिनिटे`;
+
+                // २. या पेपरचे सर्व प्रश्न लोड करणे (correct_option पडताळणीसाठी सेव्ह राहील)
+                const { data: qData, error: qErr } = await client
+                    .from('questions')
+                    .select('*')
+                    .eq('paper_id', paperId)
+                    .order('question_order', { ascending: true });
+
+                if (qErr || !qData || qData.length === 0) {
+                    throw new Error("या पेपरमध्ये अद्याप प्रश्न अपलोड केलेले नाहीत.");
+                }
+
+                // जर पेपरमध्ये प्रश्न शफल (Shuffle) करायचे असतील
+                if (paperData.shuffle_questions) {
+                    allQuestions = qData.sort(() => Math.random() - 0.5);
+                } else {
+                    allQuestions = qData;
+                }
+
+                document.getElementById('totalQuestionsCount').textContent = allQuestions.length;
+                document.getElementById('paletteCountText').textContent = `१ / ${allQuestions.length}`;
+
+                // ३. स्थानिक सेशन्समधून (Local Storage) मागील अपूर्ण उत्तरे रिस्टोअर करणे
+                initResponsesState();
+
+                // ४. टाईमर सुरू करणे
+                initExamTimer(paperData.time_minutes || 90);
+
+                // ५. पहिला प्रश्न दाखवणे व पॅलेट तयार करणे
+                renderPaletteGrid();
+                goToQuestion(0);
+
+            } catch (err) {
+                console.error("परीक्षा लोड त्रुटी:", err);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'परीक्षा सुरू होऊ शकली नाही',
+                    text: err.message || 'तांत्रिक अडचण आली.',
+                    confirmButtonText: 'डॅशबोर्डवर परत जा'
+                }).then(() => {
+                    window.location.href = 'dashboard.html';
+                });
+            }
+        }
+
+        // ब) रिस्पॉन्स स्टेट इनिशियलाइज करणे
+        function initResponsesState() {
+            examStartTime = Date.now();
+            const sessionKey = `pyq_exam_session_${paperId}_${currentUser.id}`;
+            const savedState = localStorage.getItem(sessionKey);
+
+            allQuestions.forEach(q => {
+                userResponses[q.id] = {
+                    chosen_option: null,
+                    status: 'not_visited'
+                };
+            });
+
+            if (savedState) {
+                try {
+                    const parsed = JSON.parse(savedState);
+                    if (parsed.responses) {
+                        for (const qId in parsed.responses) {
+                            if (userResponses[qId]) {
+                                userResponses[qId] = parsed.responses[qId];
+                            }
+                        }
+                    }
+                    if (parsed.remainingSeconds && parsed.remainingSeconds > 10) {
+                        remainingSeconds = parsed.remainingSeconds;
+                    }
+                } catch(e) {
+                    console.warn("मागील सेशन लोड अयशस्वी:", e);
+                }
+            }
+        }
+
+        // सेव्ह स्टेट स्थानिकरित्या साठवणे (Crash Safety)
+        function saveSessionLocally() {
+            const sessionKey = `pyq_exam_session_${paperId}_${currentUser.id}`;
+            const state = {
+                paperId: paperId,
+                remainingSeconds: remainingSeconds,
+                responses: userResponses,
+                updatedAt: Date.now()
+            };
+            localStorage.setItem(sessionKey, JSON.stringify(state));
+        }
+
+        // क) काउंटडाउन टाईमर सुरू करणे
+        function initExamTimer(minutes) {
+            if (!remainingSeconds || remainingSeconds <= 0) {
+                remainingSeconds = minutes * 60;
+            }
+
+            updateTimerDisplay();
+
+            timerInterval = setInterval(() => {
+                remainingSeconds--;
+                updateTimerDisplay();
+
+                // दर ५ सेकंदांनी प्रोग्रेस सेव्ह करणे
+                if (remainingSeconds % 5 === 0) {
+                    saveSessionLocally();
+                }
+
+                // वेळ संपल्यास ऑटो-सबमिट करणे
+                if (remainingSeconds <= 0) {
+                    clearInterval(timerInterval);
+                    autoSubmitExamOnTimeout();
+                }
+            }, 1000);
+        }
+
+        function updateTimerDisplay() {
+            const hrs = Math.floor(remainingSeconds / 3600);
+            const mins = Math.floor((remainingSeconds % 3600) / 60);
+            const secs = remainingSeconds % 60;
+
+            const format = (n) => String(n).padStart(2, '0');
+            const displayStr = `${format(hrs)}:${format(mins)}:${format(secs)}`;
+
+            const timerEl = document.getElementById('countdownTimer');
+            timerEl.textContent = displayStr;
+
+            // शेवटची ५ मिनिटे बाकी असताना लाल रंग व ब्लिंक
+            if (remainingSeconds <= 300) {
+                timerEl.classList.remove('text-amber-400');
+                timerEl.classList.add('text-rose-500', 'animate-pulse');
+            }
+        }
+
+        // ड) विशिष्ट प्रश्नावर जाणे (Go to Question)
+        function goToQuestion(index) {
+            if (index < 0 || index >= allQuestions.length) return;
+
+            // आधीच्या प्रश्नाची स्थिती अपडेट करणे (जर काही निवडलेले नसेल तर 'not_answered' करणे)
+            const prevQ = allQuestions[currentQuestionIndex];
+            if (prevQ && userResponses[prevQ.id]) {
+                const currentResp = userResponses[prevQ.id];
+                if (currentResp.status === 'not_visited') {
+                    currentResp.status = 'not_answered';
+                }
+            }
+
+            currentQuestionIndex = index;
+            const q = allQuestions[currentQuestionIndex];
+            const resp = userResponses[q.id];
+
+            // जर हा प्रश्न पहिल्यांदा पाहत असेल
+            if (resp.status === 'not_visited') {
+                resp.status = 'not_answered';
+            }
+
+            // प्रश्न क्रमांक व बॅज
+            document.getElementById('currentQNumBadge').textContent = currentQuestionIndex + 1;
+            document.getElementById('currentQSubjectBadge').textContent = q.subject || 'पोलीस भरती विशेष';
+            document.getElementById('paletteCountText').textContent = `${currentQuestionIndex + 1} / ${allQuestions.length}`;
+
+            // प्रश्न मजकूर
+            document.getElementById('questionText').textContent = q.question_text;
+
+            // आकृती / फोटो (असल्यास)
+            const imgBox = document.getElementById('questionImageContainer');
+            const imgEl = document.getElementById('questionImage');
+            if (q.image_url && q.image_url.trim() !== '') {
+                imgEl.src = q.image_url;
+                imgBox.classList.remove('hidden');
+            } else {
+                imgBox.classList.add('hidden');
+            }
+
+            // ४ पर्याय रेंडर करणे
+            renderOptions(q, resp.chosen_option);
+
+            // नेव्हिगेशन बटनांची स्थिती
+            document.getElementById('btnPrevQuestion').disabled = (currentQuestionIndex === 0);
+            if (currentQuestionIndex === allQuestions.length - 1) {
+                document.getElementById('btnSaveNext').innerHTML = '<span>जतन करा आणि समाप्त</span> <i class="fa-solid fa-flag-checkered ml-1.5"></i>';
+            } else {
+                document.getElementById('btnSaveNext').innerHTML = '<span>जतन करा आणि पुढे</span> <i class="fa-solid fa-chevron-right ml-1.5"></i>';
+            }
+
+            updatePaletteColors();
+        }
+
+        // ४ पर्याय रेंडर करणे
+        function renderOptions(q, selectedOption) {
+            const container = document.getElementById('optionsContainer');
+            const options = [
+                { key: 'A', text: q.option_a },
+                { key: 'B', text: q.option_b },
+                { key: 'C', text: q.option_c },
+                { key: 'D', text: q.option_d }
+            ];
+
+            let html = '';
+            options.forEach(opt => {
+                const isSelected = (selectedOption === opt.key);
+                html += `
+                    <label 
+                        onclick="selectOption('${opt.key}')" 
+                        class="option-card flex items-center p-3.5 sm:p-4 rounded-xl border-2 border-slate-200 cursor-pointer transition ${isSelected ? 'option-selected' : 'bg-white'}"
+                    >
+                        <div class="w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs mr-3.5 transition ${isSelected ? 'bg-amber-500 text-slate-950 shadow' : 'bg-slate-100 text-slate-700 border border-slate-300'}">
+                            ${opt.key}
+                        </div>
+                        <div class="text-sm font-semibold text-slate-800 leading-snug flex-grow">
+                            ${opt.text}
+                        </div>
+                        <div class="ml-2">
+                            <input type="radio" name="exam_option" value="${opt.key}" ${isSelected ? 'checked' : ''} class="w-4 h-4 text-amber-600 focus:ring-amber-500">
+                        </div>
+                    </label>
+                `;
+            });
+
+            container.innerHTML = html;
+        }
+
+        // पर्याय निवडणे
+        function selectOption(optionKey) {
+            const q = allQuestions[currentQuestionIndex];
+            userResponses[q.id].chosen_option = optionKey;
+            userResponses[q.id].status = 'answered';
+
+            renderOptions(q, optionKey);
+            updatePaletteColors();
+            saveSessionLocally();
+        }
+
+        // पर्याय खोडा (Clear)
+        function clearResponse() {
+            const q = allQuestions[currentQuestionIndex];
+            userResponses[q.id].chosen_option = null;
+            userResponses[q.id].status = 'not_answered';
+
+            renderOptions(q, null);
+            updatePaletteColors();
+            saveSessionLocally();
+        }
+
+        // जतन करा आणि पुढे जा (Save & Next)
+        function saveAndNext() {
+            const q = allQuestions[currentQuestionIndex];
+            if (userResponses[q.id].chosen_option) {
+                userResponses[q.id].status = 'answered';
+            } else {
+                userResponses[q.id].status = 'not_answered';
+            }
+
+            saveSessionLocally();
+
+            if (currentQuestionIndex < allQuestions.length - 1) {
+                goToQuestion(currentQuestionIndex + 1);
+            } else {
+                promptSubmitExam();
+            }
+        }
+
+        // पुनरावलोकनासाठी ठेवा (Review & Next)
+        function markForReviewAndNext() {
+            const q = allQuestions[currentQuestionIndex];
+            if (userResponses[q.id].chosen_option) {
+                userResponses[q.id].status = 'ans_review';
+            } else {
+                userResponses[q.id].status = 'review';
+            }
+
+            saveSessionLocally();
+
+            if (currentQuestionIndex < allQuestions.length - 1) {
+                goToQuestion(currentQuestionIndex + 1);
+            } else {
+                promptSubmitExam();
+            }
+        }
+
+        // मागील प्रश्न
+        function prevQuestion() {
+            if (currentQuestionIndex > 0) {
+                goToQuestion(currentQuestionIndex - 1);
+            }
+        }
+
+        // ई) प्रश्न पॅलेट तयार करणे (Render Palette Grid)
+        function renderPaletteGrid() {
+            const grid = document.getElementById('paletteGrid');
+            let html = '';
+
+            allQuestions.forEach((q, idx) => {
+                html += `
+                    <button 
+                        type="button" 
+                        onclick="goToQuestion(${idx})" 
+                        id="palBtn_${idx}" 
+                        class="palette-btn pal-not-visited"
+                    >
+                        ${idx + 1}
+                    </button>
+                `;
+            });
+
+            grid.innerHTML = html;
+            updatePaletteColors();
+        }
+
+        // पॅलेटमधील रंग आणि आकडे अपडेट करणे
+        function updatePaletteColors() {
+            let answered = 0;
+            let notAnswered = 0;
+            let review = 0;
+            let notVisited = 0;
+
+            allQuestions.forEach((q, idx) => {
+                const btn = document.getElementById(`palBtn_${idx}`);
+                if (!btn) return;
+
+                const resp = userResponses[q.id] || { status: 'not_visited' };
+                btn.className = 'palette-btn';
+
+                if (idx === currentQuestionIndex) {
+                    btn.classList.add('pal-current');
+                }
+
+                if (resp.status === 'answered') {
+                    btn.classList.add('pal-answered');
+                    answered++;
+                } else if (resp.status === 'not_answered') {
+                    btn.classList.add('pal-not-answered');
+                    notAnswered++;
+                } else if (resp.status === 'review') {
+                    btn.classList.add('pal-review');
+                    review++;
+                } else if (resp.status === 'ans_review') {
+                    btn.classList.add('pal-ans-review');
+                    answered++;
+                    review++;
+                } else {
+                    btn.classList.add('pal-not-visited');
+                    notVisited++;
+                }
+            });
+
+            document.getElementById('countAnswered').textContent = answered;
+            document.getElementById('countNotAnswered').textContent = notAnswered;
+            document.getElementById('countReview').textContent = review;
+            document.getElementById('countNotVisited').textContent = notVisited;
+            document.getElementById('mobilePalAnsweredCount').textContent = `${answered}/${allQuestions.length}`;
+        }
+
+        // फ) विषयांनुसार फिल्टर करणे (Filter by Subject)
+        function filterBySubject(subject) {
+            currentSubjectFilter = subject;
+
+            document.querySelectorAll('.subject-tab').forEach(t => {
+                t.className = 'subject-tab px-3 py-1.5 rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 whitespace-nowrap';
+            });
+
+            if (subject === 'all') {
+                document.getElementById('subTab_all').className = 'subject-tab px-3 py-1.5 rounded-lg bg-slate-900 text-white shadow-sm whitespace-nowrap';
+                goToQuestion(0);
+                return;
+            }
+
+            // त्या विषयाचा पहिला प्रश्न शोधणे
+            const firstIndex = allQuestions.findIndex(q => q.subject === subject);
+            if (firstIndex !== -1) {
+                goToQuestion(firstIndex);
+            } else {
+                Swal.fire({
+                    icon: 'info',
+                    title: 'प्रश्न नाहीत',
+                    text: `या पेपरमध्ये "${subject}" विषयाचे प्रश्न आढळले नाहीत.`,
+                    timer: 1500,
+                    showConfirmButton: false
+                });
+            }
+        }
+
+        // मोबाईल पॅलेट उघडणे/बंद करणे
+        function togglePaletteDrawer() {
+            const drawer = document.getElementById('paletteDrawer');
+            drawer.classList.toggle('hidden');
+        }
+
+        // ====================================================================
+        // ग) अंतिम परीक्षा सबमिशन लॉजिक (Exam Evaluation & Submit)
+        // ====================================================================
+
+        // सबमिशन कन्फर्मेशन डायलॉग
+        function promptSubmitExam() {
+            let answered = 0;
+            let notAnswered = 0;
+            let review = 0;
+            let notVisited = 0;
+
+            allQuestions.forEach(q => {
+                const resp = userResponses[q.id];
+                if (resp.status === 'answered' || resp.status === 'ans_review') answered++;
+                else if (resp.status === 'not_answered') notAnswered++;
+                else if (resp.status === 'review') review++;
+                else notVisited++;
+            });
+
+            Swal.fire({
+                title: 'तुम्हाला परीक्षा सबमिट करायची आहे का?',
+                html: `
+                    <div class="text-left text-xs text-slate-700 space-y-2.5 p-3.5 bg-slate-50 rounded-xl border border-slate-200 mt-2">
+                        <div class="font-bold text-slate-900 text-sm border-b pb-1 text-center">${currentPaper.title}</div>
+                        <div class="flex justify-between items-center py-1">
+                            <span>एकूण प्रश्न:</span>
+                            <b class="text-slate-900 font-extrabold text-sm">${allQuestions.length}</b>
+                        </div>
+                        <div class="flex justify-between items-center py-1 text-emerald-700">
+                            <span>सोडवलेले (Answered):</span>
+                            <b class="font-extrabold text-sm">${answered}</b>
+                        </div>
+                        <div class="flex justify-between items-center py-1 text-rose-600">
+                            <span>न सोडवलेले (Not Answered):</span>
+                            <b class="font-extrabold text-sm">${notAnswered}</b>
+                        </div>
+                        <div class="flex justify-between items-center py-1 text-purple-700">
+                            <span>पुनरावलोकनासाठी (Review):</span>
+                            <b class="font-extrabold text-sm">${review}</b>
+                        </div>
+                        <div class="flex justify-between items-center py-1 text-slate-500">
+                            <span>न पाहिलेले (Not Visited):</span>
+                            <b class="font-extrabold text-sm">${notVisited}</b>
+                        </div>
+                    </div>
+                    <p class="text-[11px] text-slate-500 mt-3 font-semibold">
+                        सबमिट केल्यानंतर उत्तरे बदलता येणार नाहीत. लगेच सविस्तर निकाल व विश्लेषण दिसेल.
+                    </p>
+                `,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#10b981',
+                cancelButtonColor: '#64748b',
+                confirmButtonText: '<i class="fa-solid fa-check mr-1"></i> होय, निकाल सादर करा',
+                cancelButtonText: 'नाही, मागे चला'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    processExamSubmission();
+                }
+            });
+        }
+
+        // वेळ संपल्यावर आपोआप सबमिट
+        function autoSubmitExamOnTimeout() {
+            Swal.fire({
+                icon: 'warning',
+                title: 'वेळ संपली आहे! ⏰',
+                text: 'परीक्षेची वेळ संपली आहे. तुमची उत्तरे आपोआप सबमिट केली जात आहेत...',
+                timer: 2500,
+                showConfirmButton: false
+            }).then(() => {
+                processExamSubmission();
+            });
+        }
+
+        // निकाल गणना व Supabase मध्ये सबमिशन प्रक्रिया
+        async function processExamSubmission() {
+            clearInterval(timerInterval);
+
+            Swal.fire({
+                title: 'निकाल तयार होत आहे...',
+                html: '<div class="text-xs text-slate-500 mt-2">तुमच्या उत्तरांची पडताळणी व विषयनिहाय गुणांकन होत आहे...</div>',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+
+            // १. उत्तरांचे मूल्यमापन (Score Calculation)
+            let correctCount = 0;
+            let wrongCount = 0;
+            let unattemptedCount = 0;
+
+            const subjectAnalysis = {};
+            const answersRecord = {};
+
+            allQuestions.forEach(q => {
+                const sub = q.subject || 'इतर';
+                if (!subjectAnalysis[sub]) {
+                    subjectAnalysis[sub] = { total: 0, correct: 0, wrong: 0, unattempted: 0, marks: 0 };
+                }
+                subjectAnalysis[sub].total++;
+
+                const resp = userResponses[q.id] || {};
+                const chosen = resp.chosen_option;
+                const correct = (q.correct_option || '').trim().toUpperCase();
+
+                answersRecord[q.id] = {
+                    question_id: q.id,
+                    chosen_option: chosen,
+                    correct_option: correct,
+                    is_correct: (chosen === correct)
+                };
+
+                if (!chosen) {
+                    unattemptedCount++;
+                    subjectAnalysis[sub].unattempted++;
+                } else if (chosen === correct) {
+                    correctCount++;
+                    subjectAnalysis[sub].correct++;
+                    subjectAnalysis[sub].marks += 1; // प्रत्येक बरोबर उत्तराला १ गुण
+                } else {
+                    wrongCount++;
+                    subjectAnalysis[sub].wrong++;
+                }
+            });
+
+            const totalScore = correctCount; // निगेटिव्ह मार्किंग नसल्याने १ प्रश्न = १ गुण
+            const percentage = allQuestions.length > 0 ? ((correctCount / allQuestions.length) * 100).toFixed(2) : 0;
+            const timeTakenSeconds = Math.max(0, (currentPaper.time_minutes * 60) - remainingSeconds);
+
+            // २. Supabase attempts टेबलमध्ये निकाल सेव्ह करणे
+            const client = getSupabaseClient();
+            let newAttemptId = null;
+
+            if (client) {
+                try {
+                    const attemptPayload = {
+                        student_id: currentUser.id,
+                        paper_id: currentPaper.id,
+                        total_questions: allQuestions.length,
+                        correct_count: correctCount,
+                        wrong_count: wrongCount,
+                        unattempted_count: unattemptedCount,
+                        total_score: totalScore,
+                        percentage: parseFloat(percentage),
+                        time_taken_seconds: timeTakenSeconds,
+                        answers_json: answersRecord,
+                        subject_analysis_json: subjectAnalysis
+                    };
+
+                    const { data: attemptData, error: aErr } = await client
+                        .from('attempts')
+                        .insert([attemptPayload])
+                        .select();
+
+                    if (!aErr && attemptData && attemptData.length > 0) {
+                        newAttemptId = attemptData[0].id;
+                    }
+                } catch(e) {
+                    console.error("निकाल सेव्ह त्रुटी:", e);
+                }
+            }
+
+            // तात्पुरते सेशन्स डिलीट करणे
+            localStorage.removeItem(`pyq_exam_session_${paperId}_${currentUser.id}`);
+
+            // निकालाच्या पानावर रिडायरेक्ट करणे
+            if (newAttemptId) {
+                window.location.href = `report.html?attempt_id=${newAttemptId}`;
+            } else {
+                // बॅकअप स्थानिक निकाल
+                localStorage.setItem('pyq_last_attempt', JSON.stringify({
+                    paper_id: currentPaper.id,
+                    total_questions: allQuestions.length,
+                    correct_count: correctCount,
+                    wrong_count: wrongCount,
+                    unattempted_count: unattemptedCount,
+                    total_score: totalScore,
+                    percentage: percentage,
+                    time_taken_seconds: timeTakenSeconds,
+                    answers_json: answersRecord,
+                    subject_analysis_json: subjectAnalysis
+                }));
+                window.location.href = `report.html?paper_id=${currentPaper.id}`;
+            }
+        }
+
+        // पेज लोड झाल्यावर परीक्षा सुरू करणे
+        document.addEventListener('DOMContentLoaded', () => {
+            loadExamData();
+        });
+    </script>
+</body>
+</html>
