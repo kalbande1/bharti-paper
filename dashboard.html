@@ -93,6 +93,7 @@
                     "सराव हीच यशाची खरी गुरुकिल्ली आहे." वेळ लावून १०० गुणांचे सराव पेपर्स सोडवा आणि तुमच्या तयारीचे अचूक विश्लेषण करा.
                 </p>
             </div>
+            <!-- पार्श्वभूमी वॉटरमार्क आयकॉन -->
             <div class="absolute -right-6 -bottom-8 text-slate-800/40 text-9xl pointer-events-none select-none">
                 <i class="fa-solid fa-shield-halved"></i>
             </div>
@@ -166,6 +167,7 @@
 
             <!-- शोध व स्टेटस फिल्टर बार -->
             <div class="p-4 border-b border-slate-200 bg-white flex flex-col sm:flex-row items-center justify-between gap-3">
+                <!-- सर्च बॉक्स -->
                 <div class="relative w-full sm:w-80">
                     <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-3 text-slate-400 text-xs"></i>
                     <input 
@@ -190,12 +192,14 @@
             <!-- पेपर्स ग्रीड (Papers Grid) -->
             <div class="p-6">
                 <div id="papersGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <!-- लोडिंग स्पिन्नर -->
                     <div class="col-span-full py-16 text-center text-slate-400">
                         <i class="fa-solid fa-spinner fa-spin text-3xl mb-3 text-amber-500"></i>
                         <div class="font-bold text-sm text-slate-600">सराव पेपर्स लोड होत आहेत...</div>
                     </div>
                 </div>
 
+                <!-- पेपर्स सापडले नाहीत तर संदेश -->
                 <div id="noPapersMsg" class="hidden py-16 text-center text-slate-400">
                     <i class="fa-solid fa-folder-open text-4xl mb-3 text-slate-300"></i>
                     <div class="font-bold text-base text-slate-600">एकही पेपर उपलब्ध नाही</div>
@@ -253,6 +257,7 @@
             const client = getSupabaseClient();
 
             try {
+                // अ) Supabase मधून पेपर्स लोड करणे
                 if (client) {
                     const { data: papersData, error: pErr } = await client
                         .from('papers')
@@ -264,6 +269,7 @@
                         allPapers = papersData;
                     }
 
+                    // ब) या विद्यार्थ्याचे सोडवलेले निकाल लोड करणे
                     if (currentUser && currentUser.id) {
                         const { data: attData, error: aErr } = await client
                             .from('attempts')
@@ -277,6 +283,7 @@
                     }
                 }
 
+                // जर Supabase मध्ये अजून पेपर्स नसतील, तर डीफॉल्ट नमुना पेपर देणे (डेमोसाठी)
                 if (!allPapers || allPapers.length === 0) {
                     allPapers = [
                         {
@@ -342,10 +349,12 @@
 
             let list = [...allPapers];
 
+            // सर्च फिल्टर
             if (searchTerm) {
                 list = list.filter(p => p.title.toLowerCase().includes(searchTerm) || (p.description && p.description.toLowerCase().includes(searchTerm)));
             }
 
+            // स्टेटस फिल्टर
             if (currentFilter === 'solved') {
                 list = list.filter(p => myAttempts.some(a => a.paper_id === p.id));
             } else if (currentFilter === 'unattempted') {
@@ -362,13 +371,15 @@
             let html = '';
 
             list.forEach(paper => {
+                // या पेपरचा निकाल आहे का?
                 const attempt = myAttempts.find(a => a.paper_id === paper.id);
                 const isSolved = !!attempt;
 
                 html += `
                     <div class="police-card p-6 flex flex-col justify-between hover:border-amber-400 relative overflow-hidden transition-all duration-200">
+                        
                         <div>
-                            <!-- Solved किंवा New बॅज -->
+                            <!-- कार्ड वरील बॅज (Solved किंवा New) -->
                             <div class="flex items-center justify-between mb-3">
                                 ${isSolved ? `
                                     <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-extrabold bg-emerald-100 text-emerald-800 border border-emerald-300 shadow-sm">
@@ -458,7 +469,7 @@
             grid.innerHTML = html;
         }
 
-        // ७. परीक्षा सुरू करण्याची पुष्टी
+        // ७. परीक्षा सुरू करण्याची पुष्टी (Confirmation Modal)
         function confirmStartExam(paperId, paperTitle, timeMinutes) {
             Swal.fire({
                 title: 'सराव परीक्षा सुरू करायची का?',
@@ -503,6 +514,7 @@
             });
         }
 
+        // पेज लोड झाल्यावर डेटा आणणे
         document.addEventListener('DOMContentLoaded', () => {
             loadDashboardData();
         });
