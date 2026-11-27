@@ -6,8 +6,8 @@
  */
 
 // १. Supabase क्रेडेन्शियल्स (येथे तुमची Supabase Project URL आणि Anon Key टाका)
-const DEFAULT_SUPABASE_URL = "https://your-project-id.supabase.co";
-const DEFAULT_SUPABASE_ANON_KEY = "your-supabase-anon-key";
+const DEFAULT_SUPABASE_URL = "https://oazfengezweygcolqlsl.supabase.co";
+const DEFAULT_SUPABASE_ANON_KEY = "sb_publishable_tQSsDd7lNJQG1giM61tYOA_DS_vBT3E";
 
 const SUPABASE_URL = localStorage.getItem('pyq_supabase_url') || DEFAULT_SUPABASE_URL;
 const SUPABASE_ANON_KEY = localStorage.getItem('pyq_supabase_anon_key') || DEFAULT_SUPABASE_ANON_KEY;
