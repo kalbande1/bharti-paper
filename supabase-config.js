@@ -6,8 +6,8 @@
  */
 
 // १. डीफॉल्ट Supabase क्रेडेन्शियल्स (येथे तुमची खरी URL व Key टाका)
-var DEFAULT_SUPABASE_URL = "https://your-project-id.supabase.co";
-var DEFAULT_SUPABASE_ANON_KEY = "your-supabase-anon-key";
+var DEFAULT_SUPABASE_URL = "https://oazfengezweygcolqlsl.supabase.co";
+var DEFAULT_SUPABASE_ANON_KEY = "sb_publishable_tQSsDd7lNJQG1giM61tYOA_DS_vBT3E";
 
 // LocalStorage किंवा डीफॉल्टमधून URL व Key मिळवणे
 var SUPABASE_URL = localStorage.getItem('pyq_supabase_url') || DEFAULT_SUPABASE_URL;
