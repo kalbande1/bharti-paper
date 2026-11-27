@@ -1,0 +1,42 @@
+/* ====================================================================
+   महाराष्ट्र पोलीस भरती सराव परीक्षा पोर्टल - मुख्य स्टाइलशीट
+   Theme: Maharashtra Police Khaki & Deep Navy Blue
+   ==================================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+Devanagari:wght@400;500;600;700;800&display=swap');
+
+:root {
+    --font-devanagari: 'Noto Sans Devanagari', 'Inter', sans-serif;
+    --police-blue: #0f2744;
+    --police-navy: #1e3a8a;
+    --police-khaki: #c29d59;
+    --police-khaki-light: #fef9ee;
+    --police-gold: #eab308;
+    --police-red: #dc2626;
+    --police-green: #16a34a;
+}
+
+body {
+    font-family: var(--font-devanagari);
+    background-color: #f8fafc;
+    color: #1e293b;
+    -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4, h5, h6, .marathi-text {
+    font-family: var(--font-devanagari);
+    letter-spacing: -0.01em;
+}
+
+.police-card {
+    background: #ffffff;
+    border-radius: 1rem;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+    transition: all 0.2s ease-in-out;
+}
+
+.police-card:hover {
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.05);
+    transform: translateY(-2px);
+}
