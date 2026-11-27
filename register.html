@@ -55,56 +55,6 @@
                 </p>
             </div>
 
-            <!-- Supabase थेट लाइव्ह स्टेटस व सेटिंग्ज बार -->
-            <div class="bg-slate-100 border-b border-slate-200 px-6 py-3">
-                <div class="flex items-center justify-between">
-                    <div id="connectionStatusBadge" class="flex items-center space-x-2 text-xs font-semibold text-slate-600">
-                        <span class="w-2.5 h-2.5 rounded-full bg-amber-500 inline-block animate-pulse"></span>
-                        <span id="connectionStatusText">Supabase स्थिती तपासत आहे...</span>
-                    </div>
-                    <button 
-                        type="button" 
-                        onclick="toggleConfigBox()" 
-                        class="text-xs text-blue-700 hover:text-blue-900 font-bold flex items-center underline"
-                    >
-                        <i class="fa-solid fa-gear mr-1"></i> Supabase सेटिंग्ज
-                    </button>
-                </div>
-
-                <!-- थेट सेटिंग्ज बॉक्स -->
-                <div id="configBox" class="hidden mt-3 pt-3 border-t border-slate-200 space-y-2.5">
-                    <p class="text-[11px] text-slate-500">
-                        टीप: जर तुम्ही आधीच <code class="bg-slate-200 px-1 py-0.5 rounded text-slate-800">supabase-config.js</code> मध्ये URL व Key भरली असेल तर येथे पुन्हा भरण्याची गरज नाही.
-                    </p>
-                    <div>
-                        <label class="block text-[11px] font-bold text-slate-700">Supabase Project URL:</label>
-                        <input 
-                            type="text" 
-                            id="cfgSupabaseUrl" 
-                            placeholder="https://xxxx.supabase.co" 
-                            class="w-full px-3 py-1.5 text-xs rounded-lg border border-slate-300 bg-white outline-none focus:ring-1 focus:ring-amber-500 font-mono"
-                        >
-                    </div>
-                    <div>
-                        <label class="block text-[11px] font-bold text-slate-700">Supabase Anon Key:</label>
-                        <input 
-                            type="password" 
-                            id="cfgSupabaseKey" 
-                            placeholder="eyJhbGciOi..." 
-                            class="w-full px-3 py-1.5 text-xs rounded-lg border border-slate-300 bg-white outline-none focus:ring-1 focus:ring-amber-500 font-mono"
-                        >
-                    </div>
-                    <button 
-                        type="button" 
-                        onclick="saveSupabaseConfig()" 
-                        class="w-full py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold transition shadow-sm flex items-center justify-center space-x-1"
-                    >
-                        <i class="fa-solid fa-check"></i>
-                        <span>क्रेडेन्शियल्स जतन करा व तपासा (Save & Test)</span>
-                    </button>
-                </div>
-            </div>
-
             <!-- नोंदणी फॉर्म -->
             <form id="registerForm" class="p-6 sm:p-8 space-y-4">
                 <!-- १. पूर्ण नाव -->
@@ -225,12 +175,11 @@
         महाराष्ट्र पोलीस भरती सराव परीक्षा पोर्टल &copy; २०२५-२०२६.
     </footer>
 
-    <!-- Supabase CDN -->
+    <!-- Supabase CDN आणि बॅकग्राउंड कॉन्फिगरेशन फाईल -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <!-- कॉन्फिगरेशन फाईल -->
     <script src="supabase-config.js"></script>
 
-    <!-- ४. १००% अचूक व थेट Supabase नोंदणी इंजिन -->
+    <!-- ४. थेट Supabase नोंदणी स्क्रिप्ट -->
     <script>
         // १. सुरक्षित पासवर्ड हॅशिंग (SHA-256)
         async function localHashPassword(plain) {
@@ -249,7 +198,7 @@
             }
         }
 
-        // २. खरा Supabase क्लायंट मिळवणे
+        // २. बॅकग्राउंडमधील Supabase क्लायंट मिळवणे
         function getSupabaseClient() {
             if (window.supabaseClient && typeof window.supabaseClient.from === 'function') {
                 return window.supabaseClient;
@@ -273,95 +222,7 @@
             return null;
         }
 
-        // ३. लाइव्ह स्टेटस तपासणी
-        async function updateConnectionStatusUI() {
-            const badge = document.getElementById('connectionStatusBadge');
-            const text = document.getElementById('connectionStatusText');
-            const client = getSupabaseClient();
-
-            if (!client) {
-                badge.innerHTML = '<span class="w-2.5 h-2.5 rounded-full bg-amber-500 inline-block"></span>';
-                text.textContent = 'Supabase जोडलेले नाही (येथे क्लिक करून URL व Key टाका)';
-                text.className = 'text-amber-700 font-semibold cursor-pointer';
-                text.onclick = toggleConfigBox;
-                return;
-            }
-
-            try {
-                // students टेबलशी लाइव्ह टेस्ट
-                const { data, error } = await client.from('students').select('id').limit(1);
-                if (error) {
-                    badge.innerHTML = '<span class="w-2.5 h-2.5 rounded-full bg-rose-500 inline-block"></span>';
-                    text.textContent = 'Supabase त्रुटी: ' + error.message;
-                    text.className = 'text-rose-700 font-bold';
-                } else {
-                    badge.innerHTML = '<span class="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block"></span>';
-                    text.textContent = '✅ Supabase डेटाबेस सक्रिय (डेटा थेट सेव्ह होईल)';
-                    text.className = 'text-emerald-700 font-bold';
-                }
-            } catch (err) {
-                badge.innerHTML = '<span class="w-2.5 h-2.5 rounded-full bg-rose-500 inline-block"></span>';
-                text.textContent = 'कनेक्शन त्रुटी: ' + (err.message || err);
-                text.className = 'text-rose-700 font-bold';
-            }
-        }
-
-        // ४. सेटिंग्ज टॉगल
-        function toggleConfigBox() {
-            const box = document.getElementById('configBox');
-            box.classList.toggle('hidden');
-
-            const currentUrl = localStorage.getItem('pyq_supabase_url') || (typeof DEFAULT_SUPABASE_URL !== 'undefined' && !DEFAULT_SUPABASE_URL.includes('your-project-id') ? DEFAULT_SUPABASE_URL : '');
-            const currentKey = localStorage.getItem('pyq_supabase_anon_key') || (typeof DEFAULT_SUPABASE_ANON_KEY !== 'undefined' && !DEFAULT_SUPABASE_ANON_KEY.includes('your-supabase-anon-key') ? DEFAULT_SUPABASE_ANON_KEY : '');
-            
-            if (currentUrl) document.getElementById('cfgSupabaseUrl').value = currentUrl;
-            if (currentKey) document.getElementById('cfgSupabaseKey').value = currentKey;
-        }
-
-        // ५. सेटिंग्ज जतन करणे व तपासून पाहणे
-        async function saveSupabaseConfig() {
-            const url = document.getElementById('cfgSupabaseUrl').value.trim();
-            const key = document.getElementById('cfgSupabaseKey').value.trim();
-
-            if (!url || !key) {
-                Swal.fire({
-                    icon: 'warning',
-                    title: 'माहिती अपूर्ण',
-                    text: 'कृपया Supabase URL आणि Anon Key दोन्ही प्रविष्ट करा.',
-                    confirmButtonColor: '#f59e0b'
-                });
-                return;
-            }
-
-            localStorage.setItem('pyq_supabase_url', url);
-            localStorage.setItem('pyq_supabase_anon_key', key);
-            window.supabaseClient = null; // री-इनिशियलाईझ करण्यासाठी रीसेट
-
-            Swal.fire({
-                icon: 'info',
-                title: 'तपासत आहे...',
-                text: 'Supabase कनेक्शन तपासले जात आहे...',
-                showConfirmButton: false,
-                timer: 1000
-            });
-
-            setTimeout(async () => {
-                await updateConnectionStatusUI();
-                document.getElementById('configBox').classList.add('hidden');
-                
-                const client = getSupabaseClient();
-                if (client) {
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Supabase जोडले गेले!',
-                        text: 'आता तुमची नोंदणी थेट Supabase मध्ये सेव्ह होईल.',
-                        confirmButtonColor: '#10b981'
-                    });
-                }
-            }, 1000);
-        }
-
-        // ६. खरी Supabase नोंदणी प्रक्रिया (No Silent Fallback!)
+        // ३. विद्यार्थी नोंदणी प्रक्रिया
         async function executeStudentRegistration(formData) {
             const { fullName, mobile, email, bhartiType, password } = formData;
             const cleanName = fullName.trim();
@@ -371,12 +232,11 @@
 
             const client = getSupabaseClient();
 
-            // १. Supabase जोडलेले नसल्यास सूचना देणे
             if (!client) {
-                throw new Error("Supabase जोडलेले नाही! कृपया वरील 'Supabase सेटिंग्ज' बटणावर क्लिक करून तुमची Project URL आणि Anon Key टाका व Save करा.");
+                throw new Error("Supabase शी संपर्क होऊ शकला नाही. कृपया supabase-config.js मध्ये तुमची खरी Project URL आणि Anon Key भरली आहे का ते तपासा.");
             }
 
-            // २. आधीच नोंदणीकृत आहे का ते Supabase मध्ये तपासणे
+            // १. मोबाईल किंवा ईमेल आधीच अस्तित्वात आहे का ते तपासणे
             const { data: existing, error: checkErr } = await client
                 .from('students')
                 .select('id, mobile, email')
@@ -384,7 +244,10 @@
 
             if (checkErr) {
                 console.error("चेक एरर:", checkErr);
-                throw new Error("डेटाबेस तपासणी अयशस्वी: " + checkErr.message);
+                if (checkErr.message && checkErr.message.includes('permission denied')) {
+                    throw new Error("डेटाबेस परमिशन त्रुटी (Permission Denied): कृपया Supabase SQL Editor मध्ये परवानग्या देणारी SQL क्वेरी चालवा.");
+                }
+                throw new Error("डेटाबेस तपासणी त्रुटी: " + checkErr.message);
             }
 
             if (existing && existing.length > 0) {
@@ -395,7 +258,7 @@
                 return { success: false, message: 'हा ईमेल आयडी आधीच नोंदणीकृत आहे.' };
             }
 
-            // ३. नवीन विद्यार्थी थेट Supabase मध्ये सेव्ह करणे
+            // २. थेट Supabase students टेबलमध्ये नवीन रेकॉर्ड इन्सर्ट करणे
             const payload = {
                 full_name: cleanName,
                 mobile: cleanMobile,
@@ -414,10 +277,10 @@
                 if (error.code === '23505') {
                     return { success: false, message: 'हा मोबाईल नंबर किंवा ईमेल आधीच नोंदणीकृत आहे.' };
                 }
-                if (error.message && error.message.includes('relation') && error.message.includes('does not exist')) {
-                    throw new Error("Supabase मध्ये 'students' टेबल सापडले नाही! कृपया Supabase SQL Editor मध्ये टेबल तयार करणारी SQL रन करा.");
+                if (error.message && error.message.includes('permission denied')) {
+                    throw new Error("डेटाबेस परमिशन त्रुटी (Permission Denied): कृपया Supabase SQL Editor मध्ये परवानग्या देणारी SQL क्वेरी चालवा.");
                 }
-                throw new Error("Supabase सेव्ह त्रुटी: " + error.message);
+                throw new Error("नोंदणी अयशस्वी: " + error.message);
             }
 
             return { 
@@ -426,10 +289,8 @@
             };
         }
 
-        // ७. फॉर्म सबमिशन इव्हेंट
+        // ४. फॉर्म सबमिशन इव्हेंट
         document.addEventListener('DOMContentLoaded', () => {
-            updateConnectionStatusUI();
-
             const registerForm = document.getElementById('registerForm');
             const submitBtn = document.getElementById('submitBtn');
 
@@ -443,7 +304,7 @@
                 const password = document.getElementById('password').value;
                 const confirmPassword = document.getElementById('confirmPassword').value;
 
-                // व्हॅलिडेशन्स
+                // इनपुट व्हॅलिडेशन्स
                 if (!/^\d{10}$/.test(mobile)) {
                     Swal.fire({
                         icon: 'warning',
@@ -475,7 +336,7 @@
                 }
 
                 submitBtn.disabled = true;
-                submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> Supabase मध्ये नोंदणी होत आहे...';
+                submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> नोंदणी सुरू आहे...';
 
                 try {
                     const result = await executeStudentRegistration({
@@ -490,7 +351,7 @@
                         Swal.fire({
                             icon: 'success',
                             title: 'नोंदणी यशस्वी झाली!',
-                            html: '<p class="text-sm">तुमची माहिती थेट <b>Supabase</b> डेटाबेसमध्ये सुरक्षितपणे सेव्ह झाली आहे.</p><p class="text-xs text-slate-500 mt-2">ॲडमिनच्या मंजुरीनंतर तुमचे लॉगिन सुरू होईल.</p>',
+                            html: '<p class="text-sm">तुमची माहिती थेट <b>Supabase</b> डेटाबेसमध्ये सेव्ह झाली आहे.</p><p class="text-xs text-slate-500 mt-2">ॲडमिनच्या मंजुरीनंतर तुमचे लॉगिन सुरू होईल.</p>',
                             confirmButtonColor: '#10b981',
                             confirmButtonText: 'लॉगिन पेजवर जा',
                             allowOutsideClick: false
